@@ -491,23 +491,36 @@ export default class Layout {
         const contentHeader = document.createElement('div');
         contentHeader.className = 'content-header';
         
-        let actionsHtml = '';
-        if (actions && actions.length > 0) {
-            actionsHtml = `
-                <div class="actions">
-                    ${actions.map(action => `
-                        <a href="#" class="btn btn-primary header-nav-link" data-target-menu-id="${action.targetMenuId}">
-                            <i class="${action.icon}"></i> ${action.text}
-                        </a>
-                    `).join('')}
-                </div>
-            `;
-        }
+        // Create title element
+        const titleElement = document.createElement('h1');
+        titleElement.textContent = title;
+        contentHeader.appendChild(titleElement);
         
-        contentHeader.innerHTML = `
-            <h1>${title}</h1>
-            ${actionsHtml}
-        `;
+        // Create actions container if there are actions
+        if (actions && actions.length > 0) {
+            const actionsContainer = document.createElement('div');
+            actionsContainer.className = 'actions';
+            
+            // Add each action button
+            actions.forEach(action => {
+                const actionLink = document.createElement('a');
+                actionLink.href = '#';
+                actionLink.className = 'btn btn-primary header-nav-link';
+                actionLink.dataset.targetMenuId = action.targetMenuId;
+                
+                const icon = document.createElement('i');
+                icon.className = action.icon;
+                actionLink.appendChild(icon);
+                
+                const textSpan = document.createElement('span');
+                textSpan.textContent = ' ' + action.text;
+                actionLink.appendChild(textSpan);
+                
+                actionsContainer.appendChild(actionLink);
+            });
+            
+            contentHeader.appendChild(actionsContainer);
+        }
         
         // Prepend the header to the content area
         this.contentArea.prepend(contentHeader);

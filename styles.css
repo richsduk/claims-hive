@@ -253,10 +253,34 @@ body {
     font-weight: 500;
     display: inline-flex; /* Align icon and text */
     align-items: center;
+    justify-content: center; /* Center content */
     gap: 5px; /* Space between icon and text */
     transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
     text-decoration: none; /* Remove underline if used as link */
     line-height: 1.5; /* Consistency */
+}
+
+/* Ensure all buttons have an icon */
+.btn i {
+    font-size: 16px; /* Slightly larger icons for better visibility */
+}
+
+/* Responsive behavior for buttons */
+@media (max-width: 768px) {
+    .btn {
+        padding: 8px; /* Reduce padding for icon-only buttons */
+        min-width: 36px; /* Ensure minimum width for touch targets */
+        min-height: 36px; /* Ensure minimum height for touch targets */
+    }
+    
+    .btn span {
+        display: none; /* Hide text on mobile */
+    }
+    
+    .btn i {
+        margin: 0; /* Remove any margin when text is hidden */
+        font-size: 18px; /* Slightly larger icons on mobile */
+    }
 }
 
 .btn-primary {
