@@ -81,7 +81,7 @@ export default class Layout {
         
         header.innerHTML = `
             <div class="header-logo">
-                <a href="/index.html">
+                <a href="#">
                     <img src="/claims_hive_logo.png" alt="Claims Hive Logo">
                 </a>
             </div>
@@ -124,12 +124,12 @@ export default class Layout {
             <nav class="sidebar-nav">
                 <!-- Claims Menu (Initially Visible) -->
                 <ul id="claims-menu">
-                    <li id="menu-claims"><a href="/index.html"><i class="fa-solid fa-ticket"></i><span> Claims</span></a></li>
+                    <li id="menu-claims"><a href="#"><i class="fa-solid fa-ticket"></i><span> Claims</span></a></li>
                     <li id="menu-clients"><a href="#"><i class="fa-solid fa-users"></i><span> Clients</span></a></li>
                     <li id="menu-stats"><a href="#"><i class="fa-solid fa-chart-line"></i><span> Stats</span></a></li>
-                    <li id="menu-datatable-demo"><a href="/components/DataTable/demo.html"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
-                    <li id="menu-charts-demo"><a href="/components/Charts/demo.html"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
-                    <li id="menu-modal-demo"><a href="/components/Modal/demo.html"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>
+                    <li id="menu-datatable-demo"><a href="#"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
+                    <li id="menu-charts-demo"><a href="#"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
+                    <li id="menu-modal-demo"><a href="#"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>
                 </ul>
                 
                 <!-- Admin Menu (Initially Hidden) -->
@@ -143,9 +143,9 @@ export default class Layout {
                     <li id="menu-message-queue"><a href="#"><i class="fa-solid fa-envelopes-bulk"></i><span> Message Queue</span></a></li>
                     <li id="menu-claim-flows"><a href="#"><i class="fa-regular fa-paper-plane"></i><span> Claim Flows</span></a></li>
                     <li id="menu-settings"><a href="#"><i class="fa-solid fa-gear"></i><span> Settings</span></a></li>
-                    <li id="menu-datatable-demo-admin"><a href="/components/DataTable/demo.html"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
-                    <li id="menu-charts-demo-admin"><a href="/components/Charts/demo.html"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
-                    <li id="menu-modal-demo-admin"><a href="/components/Modal/demo.html"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>
+                    <li id="menu-datatable-demo-admin"><a href="#"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
+                    <li id="menu-charts-demo-admin"><a href="#"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
+                    <li id="menu-modal-demo-admin"><a href="#"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>
                 </ul>
             </nav>
         `;
@@ -479,18 +479,24 @@ export default class Layout {
     /**
      * Add a header to the content area
      * @param {string} title - The header title
-     * @param {Array} actions - Array of action objects with href and text properties
+     * @param {Array} actions - Array of action objects with targetMenuId, icon, and text properties
      */
     addContentHeader(title, actions = []) {
+        // Remove existing header if one exists
+        const existingHeader = this.contentArea.querySelector('.content-header');
+        if (existingHeader) {
+            existingHeader.remove();
+        }
+
         const contentHeader = document.createElement('div');
         contentHeader.className = 'content-header';
         
         let actionsHtml = '';
-        if (actions.length > 0) {
+        if (actions && actions.length > 0) {
             actionsHtml = `
                 <div class="actions">
                     ${actions.map(action => `
-                        <a href="${action.href}" class="btn btn-primary">
+                        <a href="#" class="btn btn-primary header-nav-link" data-target-menu-id="${action.targetMenuId}">
                             <i class="${action.icon}"></i> ${action.text}
                         </a>
                     `).join('')}
@@ -503,6 +509,9 @@ export default class Layout {
             ${actionsHtml}
         `;
         
-        this.contentArea.appendChild(contentHeader);
+        // Prepend the header to the content area
+        this.contentArea.prepend(contentHeader);
+
+        // Note: Event listeners for '.header-nav-link' are added in index.html's handleNavigation
     }
 }
