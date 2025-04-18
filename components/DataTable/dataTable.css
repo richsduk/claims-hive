@@ -1,0 +1,297 @@
+/* DataTable Component Styles */
+
+/* Container for the entire component */
+.data-table-container {
+    width: 100%;
+    margin-bottom: 20px;
+}
+
+/* Table Styles (Desktop View) */
+.data-table-wrapper {
+    background-color: #fff;
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 4px;
+    overflow-x: auto; /* Handle potential horizontal scroll */
+    margin-bottom: 20px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+    vertical-align: middle; /* Align content vertically */
+    font-size: 14px;
+    white-space: nowrap; /* Prevent text wrapping in cells initially */
+}
+
+.data-table td:first-child,
+.data-table th:first-child {
+    white-space: normal; /* Allow wrapping for name/description fields */
+}
+
+.data-table tbody tr:last-child td {
+    border-bottom: none; /* Remove border from last row */
+}
+
+.data-table thead th {
+    background-color: #f8f9fa; /* Light grey header */
+    font-weight: 600;
+    color: #6c757d; /* Greyish text */
+    text-transform: uppercase;
+    font-size: 12px;
+    position: sticky;
+    top: 0;
+    z-index: 10;
+}
+
+.data-table tbody tr {
+    transition: background-color 0.2s ease;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f1f3f5; /* Light hover effect */
+    cursor: pointer;
+}
+
+.data-table tbody tr.highlight-update {
+    animation: highlight-row 2s ease-in-out;
+}
+
+@keyframes highlight-row {
+    0% { background-color: rgba(255, 193, 7, 0.3); }
+    100% { background-color: transparent; }
+}
+
+/* Card Styles (Mobile View) */
+.data-cards {
+    display: none; /* Hidden by default, shown in media query */
+}
+
+.data-card {
+    background-color: #fff;
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 4px;
+    padding: 15px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.data-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    cursor: pointer;
+}
+
+.data-card-header {
+    font-weight: 600;
+    font-size: 16px;
+    margin-bottom: 10px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid var(--border-color, #dee2e6);
+}
+
+.data-card-body {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px 15px;
+}
+
+.data-card-field {
+    margin-bottom: 5px;
+}
+
+.data-card-label {
+    font-size: 12px;
+    color: #6c757d;
+    display: block;
+    margin-bottom: 2px;
+}
+
+.data-card-value {
+    font-size: 14px;
+}
+
+.data-card.highlight-update {
+    animation: highlight-card 2s ease-in-out;
+}
+
+@keyframes highlight-card {
+    0% { background-color: rgba(255, 193, 7, 0.3); }
+    100% { background-color: #fff; }
+}
+
+/* Status Badges */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Define colors for each status */
+.status-new { background-color: #cfe2ff; color: #0a58ca; } /* Blue */
+.status-assigned { background-color: #ffedd5; color: #9a3412; } /* Orange */
+.status-accepted { background-color: #d1fae5; color: #047857; } /* Green */
+.status-rejected { background-color: #fee2e2; color: #b91c1c; } /* Red */
+.status-settled { background-color: #e5e7eb; color: #4b5563; } /* Grey */
+
+/* Action Buttons */
+.action-buttons {
+    display: flex;
+    gap: 5px;
+    justify-content: flex-end;
+}
+
+.action-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 4px;
+    transition: background-color 0.2s ease;
+    color: #6c757d;
+}
+
+.action-btn:hover {
+    background-color: #f1f3f5;
+    color: #212529;
+}
+
+.action-btn.edit {
+    color: #0d6efd;
+}
+
+.action-btn.delete {
+    color: #dc3545;
+}
+
+/* Pagination */
+.pagination-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 15px;
+    font-size: 14px;
+    color: #6c757d;
+    flex-wrap: wrap; /* Allow wrapping on small screens */
+    gap: 10px;
+}
+
+.pagination-info {
+    white-space: nowrap;
+}
+
+.pagination-buttons {
+    display: flex;
+    gap: 5px;
+}
+
+/* Connection Status Indicator */
+.connection-status {
+    display: inline-flex;
+    align-items: center;
+    font-size: 12px;
+    margin-left: 10px;
+    color: #6c757d;
+}
+
+.connection-status .indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-right: 5px;
+}
+
+.connection-status .indicator.connected {
+    background-color: #28a745;
+}
+
+.connection-status .indicator.disconnected {
+    background-color: #dc3545;
+}
+
+.connection-status .indicator.connecting {
+    background-color: #ffc107;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% { opacity: 0.5; }
+    50% { opacity: 1; }
+    100% { opacity: 0.5; }
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .data-table-wrapper {
+        display: none; /* Hide table on mobile */
+    }
+    
+    .data-cards {
+        display: block; /* Show cards on mobile */
+    }
+    
+    .data-card-body {
+        grid-template-columns: 1fr; /* Stack fields in one column on very small screens */
+    }
+    
+    .pagination-container {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .pagination-buttons {
+        width: 100%;
+        justify-content: space-between;
+    }
+}
+
+@media (min-width: 576px) and (max-width: 768px) {
+    .data-card-body {
+        grid-template-columns: 1fr 1fr; /* Two columns on larger mobile screens */
+    }
+}
+
+/* Loading State */
+.data-loading {
+    text-align: center;
+    padding: 30px;
+    color: #6c757d;
+}
+
+.data-loading .spinner {
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #3498db;
+    border-radius: 50%;
+    width: 24px;
+    height: 24px;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 10px;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Empty State */
+.data-empty {
+    text-align: center;
+    padding: 30px;
+    color: #6c757d;
+    background-color: #fff;
+    border: 1px solid var(--border-color, #dee2e6);
+    border-radius: 4px;
+}

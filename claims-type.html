@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSON Schema Builder (Editable Fields)</title>
+    <style>
+        /* --- Previous styles remain the same --- */
+        body { font-family: sans-serif; line-height: 1.6; margin: 20px; background-color: #f4f4f4; display: flex; flex-direction: column; gap: 30px; }
+        .container { background-color: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
+        h1, h2 { color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px; margin-top: 0; }
+        .form-builder .form-row { margin-bottom: 10px; display: flex; align-items: center; flex-wrap: wrap; }
+        .form-builder label { display: inline-block; margin-right: 5px; font-weight: bold; min-width: 90px; padding-bottom: 5px; }
+        .form-builder input[type="text"], .form-builder select { padding: 8px 10px; margin-right: 10px; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box; flex-grow: 1; min-width: 150px; }
+        #claim-type, #field-label, #enum-options-input { max-width: 350px; }
+        #field-type { max-width: 200px; }
+        .form-builder button#add-field-btn { padding: 9px 15px; background-color: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; transition: background-color 0.3s ease; margin-left: 95px; margin-top: 5px; }
+        .form-builder button#add-field-btn:hover { background-color: #0056b3; }
+        .enum-options-container { display: none; width: 100%; padding-left: 95px; box-sizing: border-box; margin-top: 5px; }
+        .enum-options-container label { min-width: auto; margin-right: 5px; font-size: 0.9em; color: #555; }
+        .enum-options-container input { flex-grow: 1; max-width: 350px; }
+        #added-fields-list { margin-top: 20px; border-top: 1px dashed #ccc; padding-top: 15px; }
+        #added-fields-list ul { list-style: none; padding: 0; margin: 0; }
+        #added-fields-list li { background-color: #e9ecef; padding: 10px 15px; margin-bottom: 8px; border-radius: 4px; display: flex; justify-content: space-between; align-items: center; border: 1px solid #ced4da; cursor: grab; transition: background-color 0.2s ease, border-color 0.2s ease; }
+        #added-fields-list li span { font-family: monospace; font-size: 0.9em; color: #495057; }
+        #added-fields-list .field-label { font-weight: bold; color: #333; margin-right: 10px; flex-grow: 1; user-select: none; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; }
+        #added-fields-list .field-type { font-style: italic; color: #555; margin-right: 15px; min-width: 80px; text-align: right; }
+        #added-fields-list .field-actions button { background-color: #6c757d; color: white; border: none; padding: 4px 8px; border-radius: 3px; cursor: pointer; font-size: 0.8em; margin-left: 5px; /* Spacing between buttons */ }
+        #added-fields-list .field-actions button.edit-btn { background-color: #ffc107; color: #333; }
+        #added-fields-list .field-actions button.edit-btn:hover { background-color: #e0a800; }
+        #added-fields-list .field-actions button.remove-btn { background-color: #dc3545; }
+        #added-fields-list .field-actions button.remove-btn:hover { background-color: #c82333; }
+        #added-fields-list li.dragging { opacity: 0.5; background-color: #d1ecf1; cursor: grabbing; }
+        #added-fields-list li.drag-over { border-top: 2px solid #007bff; background-color: #cfe2ff; }
+        #added-fields-list li.dragging .field-actions { visibility: hidden; } /* Hide buttons while dragging */
+        #json-schema-output-pre { margin: 0; padding: 0; }
+        #json-schema-output { display: block; background-color: #282c34; color: #abb2bf; padding: 15px; border-radius: 5px; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; min-height: 150px; border: 1px solid #ccc; white-space: pre-wrap; line-height: 1.5; overflow-x: auto; }
+
+        /* --- Modal Styles --- */
+        .modal {
+            display: none; /* Hidden by default */
+            position: fixed; /* Stay in place */
+            z-index: 1000; /* Sit on top */
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto; /* Enable scroll if needed */
+            background-color: rgba(0,0,0,0.5); /* Black w/ opacity */
+            justify-content: center; /* Center horizontally */
+            align-items: center; /* Center vertically */
+        }
+
+        .modal.visible {
+            display: flex; /* Show when visible */
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            padding: 25px;
+            border: 1px solid #888;
+            border-radius: 8px;
+            width: 80%; /* Could be more mobile-friendly */
+            max-width: 500px; /* Maximum width */
+            position: relative; /* For close button positioning */
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .modal-close-btn {
+            color: #aaa;
+            position: absolute;
+            top: 10px;
+            right: 15px;
+            font-size: 28px;
+            font-weight: bold;
+            line-height: 1;
+            cursor: pointer;
+        }
+
+        .modal-close-btn:hover,
+        .modal-close-btn:focus {
+            color: black;
+            text-decoration: none;
+        }
+
+        .modal-content h3 {
+            margin-top: 0;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 10px;
+        }
+
+         /* Style form elements within modal similar to main form */
+        .modal-content .form-row { margin-bottom: 15px; display: flex; flex-direction: column; }
+        .modal-content label { margin-bottom: 5px; font-weight: bold; }
+        .modal-content input[type="text"], .modal-content select {
+            padding: 8px 10px; border: 1px solid #ccc; border-radius: 4px; width: 100%;
+            box-sizing: border-box;
+        }
+        .modal-content .enum-options-container { /* Override builder style */
+            padding-left: 0; width: 100%; display: none; margin-top: 10px;
+        }
+        .modal-content .enum-options-container label { font-size: 0.9em; color: #555; }
+
+        .modal-actions {
+            text-align: right;
+            margin-top: 20px;
+            padding-top: 15px;
+            border-top: 1px solid #eee;
+        }
+        .modal-actions button {
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-left: 10px;
+            border: none;
+        }
+        .modal-actions button#save-edit-btn { background-color: #28a745; color: white; }
+        .modal-actions button#save-edit-btn:hover { background-color: #218838; }
+        .modal-actions button#cancel-edit-btn { background-color: #6c757d; color: white; }
+        .modal-actions button#cancel-edit-btn:hover { background-color: #5a6268; }
+
+    </style>
+</head>
+<body>
+
+    <div class="container form-builder">
+        <!-- Claim Type and Field Inputs (same as before) -->
+        <h1>Claim Form Builder</h1>
+        <div class="form-row">
+            <label for="claim-type">Claim Type:</label>
+            <input type="text" id="claim-type" placeholder="e.g., Car Accident Claim, PPI Claim">
+        </div>
+        <hr style="border: none; border-top: 1px solid #eee; margin: 15px 0;">
+        <div class="form-row">
+            <label for="field-label">Field Label:</label>
+            <input type="text" id="field-label" placeholder="e.g., Claimant Name">
+        </div>
+        <div class="form-row">
+            <label for="field-type">Field Type:</label>
+            <select id="field-type">
+                <option value="text">Text</option>
+                <option value="integer">Integer</option>
+                <option value="decimal">Decimal</option>
+                <option value="date">Date</option>
+                <option value="time">Time</option>
+                <option value="longtext">Long Text</option>
+                <option value="boolean">Yes/No (Boolean)</option>
+                <option value="enum">Dropdown (Enum)</option>
+            </select>
+        </div>
+        <div class="form-row enum-options-container" id="enum-options-div">
+             <label for="enum-options-input">Options (comma-separated):</label>
+             <input type="text" id="enum-options-input" placeholder="e.g., Option A, Option B, Option C">
+        </div>
+        <div class="form-row">
+             <button id="add-field-btn">Add Field</button>
+        </div>
+
+        <div id="added-fields-list">
+             <h2>Current Fields</h2>
+             <ul id="fields-ul"> <!-- Fields will appear here --> </ul>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>Generated JSON Schema</h2>
+        <pre id="json-schema-output-pre"><code id="json-schema-output">{}</code></pre>
+    </div>
+
+    <!-- Edit Field Modal -->
+    <div id="edit-modal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close-btn" id="modal-close-btn">&times;</span>
+            <h3>Edit Field</h3>
+            <div class="form-row">
+                <label for="edit-field-label">Field Label:</label>
+                <input type="text" id="edit-field-label">
+            </div>
+            <div class="form-row">
+                <label for="edit-field-type">Field Type:</label>
+                <select id="edit-field-type">
+                    <option value="text">Text</option>
+                    <option value="integer">Integer</option>
+                    <option value="decimal">Decimal</option>
+                    <option value="date">Date</option>
+                    <option value="time">Time</option>
+                    <option value="longtext">Long Text</option>
+                    <option value="boolean">Yes/No (Boolean)</option>
+                    <option value="enum">Dropdown (Enum)</option>
+                </select>
+            </div>
+            <div class="form-row enum-options-container" id="edit-enum-options-div">
+                 <label for="edit-enum-options-input">Options (comma-separated):</label>
+                 <input type="text" id="edit-enum-options-input" placeholder="e.g., Option A, Option B">
+            </div>
+            <div class="modal-actions">
+                <button id="cancel-edit-btn">Cancel</button>
+                <button id="save-edit-btn">Save Changes</button>
+            </div>
+        </div>
+    </div>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // Main Form Inputs
+            const claimTypeInput = document.getElementById('claim-type');
+            const fieldLabelInput = document.getElementById('field-label');
+            const fieldTypeSelect = document.getElementById('field-type');
+            const enumOptionsDiv = document.getElementById('enum-options-div');
+            const enumOptionsInput = document.getElementById('enum-options-input');
+            const addFieldBtn = document.getElementById('add-field-btn');
+
+            // Display Elements
+            const fieldsUl = document.getElementById('fields-ul');
+            const jsonSchemaOutput = document.getElementById('json-schema-output');
+
+            // Modal Elements
+            const editModal = document.getElementById('edit-modal');
+            const editFieldLabelInput = document.getElementById('edit-field-label');
+            const editFieldTypeSelect = document.getElementById('edit-field-type');
+            const editEnumOptionsDiv = document.getElementById('edit-enum-options-div');
+            const editEnumOptionsInput = document.getElementById('edit-enum-options-input');
+            const saveEditBtn = document.getElementById('save-edit-btn');
+            const cancelEditBtn = document.getElementById('cancel-edit-btn');
+            const modalCloseBtn = document.getElementById('modal-close-btn');
+
+
+            // State
+            let formFields = []; // Array stores {id, label, type, options?}
+            let draggedElement = null;
+            // let fieldBeingEditedId = null; // Store ID of field being edited (alternative: use modal dataset)
+
+            // --- Helper Functions (generateJsonKey, mapTypeToJsonSchema) ---
+            function generateJsonKey(label) { /* ... (same as before) ... */
+                if (!label) return '';
+                return label.trim().toLowerCase().replace(/[\s\-./\\:]+/g, '_').replace(/[^a-z0-9_]/g, '').replace(/^[^a-z_]*/, '') || `field_${Date.now()}`;
+            }
+            function mapTypeToJsonSchema(field) { /* ... (same as before) ... */
+                 switch (field.type) {
+                    case 'integer': return { type: 'integer' }; case 'decimal': return { type: 'number' };
+                    case 'date': return { type: 'string', format: 'date' }; case 'time': return { type: 'string', format: 'time' };
+                    case 'longtext': return { type: 'string', format: 'textarea' }; case 'boolean': return { type: 'boolean' };
+                    case 'enum': return { type: 'string', enum: field.options || [] };
+                    case 'text': default: return { type: 'string' };
+                }
+            }
+
+            // --- Core Rendering and Schema Generation ---
+            function renderFieldList() {
+                fieldsUl.innerHTML = '';
+                if (formFields.length === 0) { /* ... (placeholder) ... */
+                    const li = document.createElement('li'); li.textContent = 'No fields added yet.'; li.style.cssText = 'cursor: default; background: transparent; border: none; color: #6c757d;'; fieldsUl.appendChild(li); return;
+                }
+                formFields.forEach(field => {
+                    const li = document.createElement('li');
+                    li.dataset.id = field.id; li.draggable = true;
+                    const labelSpan = document.createElement('span');
+                    labelSpan.className = 'field-label'; labelSpan.textContent = field.label;
+                    const typeSpan = document.createElement('span');
+                    typeSpan.className = 'field-type'; typeSpan.textContent = `(${field.type})`;
+
+                    // Action buttons container
+                    const actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'field-actions';
+
+                    // EDIT Button
+                    const editBtn = document.createElement('button');
+                    editBtn.className = 'edit-btn';
+                    editBtn.textContent = 'Edit';
+                    editBtn.type = 'button'; // Prevent potential form submission issues
+                    editBtn.onclick = (e) => { e.stopPropagation(); openEditModal(field.id); }; // Call edit modal function
+                    actionsDiv.appendChild(editBtn);
+
+                    // REMOVE Button
+                    const removeBtn = document.createElement('button');
+                    removeBtn.className = 'remove-btn'; removeBtn.textContent = 'Remove';
+                    removeBtn.type = 'button';
+                    removeBtn.addEventListener('mousedown', e => e.stopPropagation());
+                    removeBtn.addEventListener('touchstart', e => e.stopPropagation());
+                    removeBtn.onclick = e => { e.stopPropagation(); removeField(field.id); };
+                    actionsDiv.appendChild(removeBtn);
+
+
+                    li.appendChild(labelSpan); li.appendChild(typeSpan); li.appendChild(actionsDiv); // Add actions div
+                    // Drag listeners (same as before)
+                    li.addEventListener('dragstart', handleDragStart); li.addEventListener('dragend', handleDragEnd);
+                    li.addEventListener('dragover', handleDragOver); li.addEventListener('dragleave', handleDragLeave);
+                    li.addEventListener('drop', handleDrop);
+                    fieldsUl.appendChild(li);
+                });
+            }
+
+            function generateAndDisplaySchema() { /* ... (same as before, uses claimTypeInput) ... */
+                 const claimTitle = claimTypeInput.value.trim() || "Claim Data";
+                 const schema = { $schema: "http://json-schema.org/draft-07/schema#", title: claimTitle, description: `Schema for ${claimTitle}`, type: "object", properties: {} };
+                 const propertyKeys = new Set();
+                 formFields.forEach(field => {
+                     const key = generateJsonKey(field.label);
+                     if (key && !propertyKeys.has(key)) {
+                          schema.properties[key] = { title: field.label, ...mapTypeToJsonSchema(field) };
+                          propertyKeys.add(key);
+                     } else if (key) { console.warn(`Skipping field "${field.label}" due to duplicate key "${key}" after sanitization.`); }
+                 });
+                 jsonSchemaOutput.textContent = JSON.stringify(schema, null, 2);
+            }
+
+
+            // --- Main Form Event Handlers ---
+            claimTypeInput.addEventListener('input', generateAndDisplaySchema);
+            fieldTypeSelect.addEventListener('change', () => { // Show/hide main enum options
+                enumOptionsDiv.style.display = (fieldTypeSelect.value === 'enum') ? 'flex' : 'none';
+                enumOptionsInput.required = (fieldTypeSelect.value === 'enum');
+                if (fieldTypeSelect.value !== 'enum') enumOptionsInput.value = '';
+            });
+            addFieldBtn.onclick = () => { /* ... (same validation and field creation as before) ... */
+                const label = fieldLabelInput.value.trim(); const type = fieldTypeSelect.value; let options = null;
+                if (!label) { alert('Please enter a field label.'); fieldLabelInput.focus(); return; }
+                if (type === 'enum') { /* ... (enum validation) ... */
+                    const optionsString = enumOptionsInput.value.trim(); if (!optionsString) { alert('Please enter the comma-separated options for the Enum field.'); enumOptionsInput.focus(); return; }
+                    options = optionsString.split(',').map(opt => opt.trim()).filter(opt => opt !== ''); if (options.length === 0) { alert('Please enter valid, non-empty comma-separated options.'); enumOptionsInput.focus(); return; }
+                }
+                if (formFields.some(f => f.label.toLowerCase() === label.toLowerCase())) { if (!confirm(`Field "${label}" already exists. Add anyway?`)) return; }
+                const newField = { id: Date.now().toString() + Math.random().toString(16).slice(2), label: label, type: type, ...(options && { options: options }) };
+                formFields.push(newField);
+                fieldLabelInput.value = ''; fieldLabelInput.focus(); // Reset main form label input only
+                renderFieldList(); generateAndDisplaySchema();
+            };
+            fieldLabelInput.addEventListener('keypress', (e) => { if (e.key === 'Enter') { e.preventDefault(); addFieldBtn.click(); } });
+            window.removeField = (idToRemove) => { /* ... (same as before) ... */
+                 formFields = formFields.filter(field => field.id !== idToRemove); renderFieldList(); generateAndDisplaySchema();
+            };
+
+            // --- Modal Functions ---
+            function openEditModal(fieldId) {
+                const fieldToEdit = formFields.find(f => f.id === fieldId);
+                if (!fieldToEdit) {
+                    console.error("Field not found for editing:", fieldId);
+                    return;
+                }
+
+                // Populate modal fields
+                editFieldLabelInput.value = fieldToEdit.label;
+                editFieldTypeSelect.value = fieldToEdit.type;
+                editEnumOptionsInput.value = (fieldToEdit.type === 'enum' && fieldToEdit.options) ? fieldToEdit.options.join(', ') : '';
+
+                // Store the ID of the field being edited on the modal itself
+                editModal.dataset.editingId = fieldId;
+
+                // Trigger change event to correctly show/hide enum options in modal
+                editFieldTypeSelect.dispatchEvent(new Event('change'));
+
+                // Show modal
+                editModal.classList.add('visible');
+            }
+
+            function closeEditModal() {
+                editModal.classList.remove('visible');
+                editModal.dataset.editingId = ''; // Clear the ID
+                // Optional: Clear modal fields? Usually not needed as they are repopulated on open.
+            }
+
+            function saveEditChanges() {
+                const fieldId = editModal.dataset.editingId;
+                if (!fieldId) return; // Should not happen if modal opened correctly
+
+                const fieldToUpdate = formFields.find(f => f.id === fieldId);
+                if (!fieldToUpdate) {
+                    console.error("Field to update not found:", fieldId);
+                    closeEditModal(); return;
+                }
+
+                // Get new values from modal
+                const newLabel = editFieldLabelInput.value.trim();
+                const newType = editFieldTypeSelect.value;
+                let newOptions = null;
+
+                // Validation
+                if (!newLabel) {
+                    alert('Field label cannot be empty.');
+                    editFieldLabelInput.focus(); return;
+                }
+                 // Check for duplicate label (excluding the field being edited itself)
+                if (formFields.some(f => f.id !== fieldId && f.label.toLowerCase() === newLabel.toLowerCase())) {
+                     if (!confirm(`Another field with label "${newLabel}" already exists. Save anyway? (Sanitized keys might collide)`)) {
+                         return;
+                     }
+                 }
+
+
+                if (newType === 'enum') {
+                    const optionsString = editEnumOptionsInput.value.trim();
+                    if (!optionsString) {
+                        alert('Please enter comma-separated options for the Enum field.');
+                        editEnumOptionsInput.focus(); return;
+                    }
+                    newOptions = optionsString.split(',')
+                                            .map(opt => opt.trim())
+                                            .filter(opt => opt !== '');
+                    if (newOptions.length === 0) {
+                         alert('Please enter valid, non-empty comma-separated options.');
+                         editEnumOptionsInput.focus(); return;
+                    }
+                }
+
+                // Update field object in the array
+                fieldToUpdate.label = newLabel;
+                fieldToUpdate.type = newType;
+                if (newType === 'enum') {
+                    fieldToUpdate.options = newOptions;
+                } else {
+                    delete fieldToUpdate.options; // Remove options if type is no longer enum
+                }
+
+                closeEditModal();
+                renderFieldList(); // Update the list display
+                generateAndDisplaySchema(); // Update the JSON schema
+            }
+
+            // --- Modal Event Listeners ---
+            editFieldTypeSelect.addEventListener('change', () => { // Show/hide modal enum options
+                editEnumOptionsDiv.style.display = (editFieldTypeSelect.value === 'enum') ? 'block' : 'none'; // Use block inside modal
+                editEnumOptionsInput.required = (editFieldTypeSelect.value === 'enum');
+                 if (editFieldTypeSelect.value !== 'enum') editEnumOptionsInput.value = '';
+            });
+            saveEditBtn.addEventListener('click', saveEditChanges);
+            cancelEditBtn.addEventListener('click', closeEditModal);
+            modalCloseBtn.addEventListener('click', closeEditModal);
+            // Optional: Close modal if clicking outside the content
+            editModal.addEventListener('click', (event) => {
+                if (event.target === editModal) { // Check if the click was directly on the overlay
+                    closeEditModal();
+                }
+            });
+
+            // --- Drag and Drop Handlers (Unchanged) ---
+            function handleDragStart(e) { /* ... */ }
+            function handleDragEnd(e) { /* ... */ }
+            function handleDragOver(e) { /* ... */ }
+            function handleDragLeave(e) { /* ... */ }
+            function handleDrop(e) { /* ... */ }
+            // (Copying them again for completeness)
+            function handleDragStart(e) { draggedElement = this; e.dataTransfer.effectAllowed = 'move'; setTimeout(() => { this.classList.add('dragging'); }, 0); }
+            function handleDragEnd(e) { if (draggedElement) { draggedElement.classList.remove('dragging'); } document.querySelectorAll('#fields-ul li.drag-over').forEach(el => el.classList.remove('drag-over')); draggedElement = null; }
+            function handleDragOver(e) { e.preventDefault(); e.dataTransfer.dropEffect = 'move'; if (this !== draggedElement && !this.classList.contains('drag-over')) { document.querySelectorAll('#fields-ul li.drag-over').forEach(el => el.classList.remove('drag-over')); this.classList.add('drag-over'); } return false; }
+            function handleDragLeave(e) { if (this !== draggedElement) { this.classList.remove('drag-over'); } }
+            function handleDrop(e) { e.preventDefault(); e.stopPropagation(); this.classList.remove('drag-over'); if (draggedElement && this !== draggedElement) { const draggedId = draggedElement.dataset.id; const targetId = this.dataset.id; const draggedIndex = formFields.findIndex(f => f.id === draggedId); const targetIndex = formFields.findIndex(f => f.id === targetId); if (draggedIndex !== -1 && targetIndex !== -1) { const [draggedItem] = formFields.splice(draggedIndex, 1); const newTargetIndex = formFields.findIndex(f => f.id === targetId); formFields.splice(newTargetIndex, 0, draggedItem); renderFieldList(); generateAndDisplaySchema(); } } if (draggedElement) { draggedElement.classList.remove('dragging'); } draggedElement = null; return false; }
+
+
+            // --- Initial Load ---
+            renderFieldList();
+            generateAndDisplaySchema();
+            fieldTypeSelect.dispatchEvent(new Event('change')); // Ensure correct initial state for main enum input
+        });
+    </script>
+
+</body>
+</html>

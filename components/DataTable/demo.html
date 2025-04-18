@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DataTable Component Demo</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Base styles from the main project -->
+    <link rel="stylesheet" href="../../styles.css">
+    
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="../layout.css">
+    
+    <!-- DataTable component styles -->
+    <link rel="stylesheet" href="dataTable.css">
+    
+    <!-- Demo-specific styles -->
+    <link rel="stylesheet" href="demo.css">
+</head>
+<body>
+    <!-- Demo content will be placed inside the layout -->
+    <div class="demo-container" style="display: none;">
+        <div class="demo-controls">
+            <button id="add-row-btn"><i class="fas fa-plus"></i> Add Row</button>
+            <button id="update-row-btn"><i class="fas fa-edit"></i> Update Random Row</button>
+            <button id="delete-row-btn"><i class="fas fa-trash"></i> Delete Random Row</button>
+            <button id="toggle-loading-btn"><i class="fas fa-spinner"></i> Toggle Loading</button>
+        </div>
+        
+        <!-- DataTable will be rendered here -->
+        <div id="data-table-container"></div>
+        
+        <!-- Modal for row details -->
+        <div id="row-details-modal" class="modal-overlay">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h2>Row Details</h2>
+                    <button class="modal-close-btn">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <!-- Row details will be populated here -->
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary modal-close-btn">Close</button>
+                    <button class="btn btn-primary" id="save-changes-btn">Save Changes</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import as modules -->
+    <script type="module">
+        import Layout from '../layout.js';
+        import DataTable from './DataTable.js';
+        import DataFormatter from './dataFormatter.js';
+        
+        // Initialize layout
+        const layout = new Layout({
+            title: 'DataTable Component Demo',
+            activeMenuItem: 'menu-datatable-demo'
+        });
+        
+        // Add content header
+        layout.addContentHeader('DataTable Component Demo', [
+            {
+                href: '/index.html',
+                icon: 'fas fa-home',
+                text: 'Back to Home'
+            }
+        ]);
+        
+        // Get demo container and show its content
+        const demoContainer = document.querySelector('.demo-container');
+        demoContainer.style.display = 'block';
+        
+        // Add demo content to layout
+        layout.addContent(demoContainer);
+        
+        // Sample data
+        const sampleData = [
+            {
+                id: 1,
+                name: 'Windscreen Chip Repair',
+                type: 'Motor',
+                status: 'new',
+                affiliate: 'Affiliate Partners Inc.',
+                buyer: 'Major Buyer Co.',
+                amount: 1250.75,
+                dateAdded: '2024-07-28T10:15:00'
+            },
+            {
+                id: 2,
+                name: 'Basement Flood Damage',
+                type: 'Home',
+                status: 'assigned',
+                affiliate: 'Regional Affiliates',
+                buyer: 'Insurance Giant Ltd',
+                amount: 5780.00,
+                dateAdded: '2024-07-27T14:30:00'
+            },
+            {
+                id: 3,
+                name: 'Accidental Laptop Damage',
+                type: 'Gadget',
+                status: 'accepted',
+                affiliate: 'Tech Affiliates',
+                buyer: 'Gadget Protect',
+                amount: 899.99,
+                dateAdded: '2024-07-27T09:00:00'
+            },
+            {
+                id: 4,
+                name: 'Delayed Flight Compensation',
+                type: 'Travel',
+                status: 'rejected',
+                affiliate: 'Travel Agents United',
+                buyer: 'Air Insure',
+                amount: 350.50,
+                dateAdded: '2024-07-26T11:55:00'
+            },
+            {
+                id: 5,
+                name: 'Minor Fender Bender',
+                type: 'Motor',
+                status: 'settled',
+                affiliate: 'Affiliate Partners Inc.',
+                buyer: 'Major Buyer Co.',
+                amount: 2100.25,
+                dateAdded: '2024-07-25T16:20:00'
+            },
+            {
+                id: 6,
+                name: 'Lost Luggage Claim',
+                type: 'Travel',
+                status: 'accepted',
+                affiliate: 'Travel Agents United',
+                buyer: 'Air Insure',
+                amount: 750.00,
+                dateAdded: '2024-07-28T12:00:00'
+            }
+        ];
+        
+        // Column definitions
+        const columns = [
+            {
+                field: 'name',
+                title: 'Claim Name',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'type',
+                title: 'Claim Type',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'status',
+                title: 'Status',
+                type: 'status',
+                sortable: true
+            },
+            {
+                field: 'affiliate',
+                title: 'Affiliate',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'buyer',
+                title: 'Buyer',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'amount',
+                title: 'Amount',
+                type: 'currency',
+                sortable: true,
+                formatOptions: {
+                    style: 'currency',
+                    currency: 'USD'
+                }
+            },
+            {
+                field: 'dateAdded',
+                title: 'Date Added',
+                type: 'date',
+                sortable: true,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                actions: [
+                    {
+                        icon: 'fas fa-edit',
+                        title: 'Edit',
+                        class: 'edit',
+                        onClick: (rowData) => {
+                            console.log('Edit clicked for:', rowData);
+                            showRowDetails(rowData);
+                        }
+                    },
+                    {
+                        icon: 'fas fa-trash',
+                        title: 'Delete',
+                        class: 'delete',
+                        onClick: (rowData) => {
+                            console.log('Delete clicked for:', rowData);
+                            if (confirm(`Are you sure you want to delete "${rowData.name}"?`)) {
+                                dataTable.removeRow(rowData.id);
+                            }
+                        }
+                    }
+                ]
+            }
+        ];
+        
+        // Initialize DataTable
+        const dataTable = new DataTable('#data-table-container', {
+            columns: columns,
+            data: sampleData,
+            pageSize: 5,
+            sortColumn: 'dateAdded',
+            sortDirection: 'desc',
+            cardTitleField: 'name',
+            onRowClick: showRowDetails,
+            websocket: {
+                enabled: false // Set to true when implementing actual WebSocket
+            }
+        });
+        
+        // Modal functionality
+        const modal = document.getElementById('row-details-modal');
+        const modalBody = modal.querySelector('.modal-body');
+        const closeButtons = modal.querySelectorAll('.modal-close-btn');
+        const saveChangesBtn = document.getElementById('save-changes-btn');
+        
+        let currentRowData = null;
+        
+        function showRowDetails(rowData) {
+            currentRowData = rowData;
+            
+            // Populate modal body
+            modalBody.innerHTML = `
+                <div class="form-row">
+                    <label for="edit-name">Claim Name:</label>
+                    <input type="text" id="edit-name" value="${rowData.name}" class="form-control">
+                </div>
+                <div class="form-row">
+                    <label for="edit-type">Claim Type:</label>
+                    <input type="text" id="edit-type" value="${rowData.type}" class="form-control">
+                </div>
+                <div class="form-row">
+                    <label for="edit-status">Status:</label>
+                    <select id="edit-status" class="form-control">
+                        <option value="new" ${rowData.status === 'new' ? 'selected' : ''}>New</option>
+                        <option value="assigned" ${rowData.status === 'assigned' ? 'selected' : ''}>Assigned</option>
+                        <option value="accepted" ${rowData.status === 'accepted' ? 'selected' : ''}>Accepted</option>
+                        <option value="rejected" ${rowData.status === 'rejected' ? 'selected' : ''}>Rejected</option>
+                        <option value="settled" ${rowData.status === 'settled' ? 'selected' : ''}>Settled</option>
+                    </select>
+                </div>
+                <div class="form-row">
+                    <label for="edit-affiliate">Affiliate:</label>
+                    <input type="text" id="edit-affiliate" value="${rowData.affiliate}" class="form-control">
+                </div>
+                <div class="form-row">
+                    <label for="edit-buyer">Buyer:</label>
+                    <input type="text" id="edit-buyer" value="${rowData.buyer}" class="form-control">
+                </div>
+                <div class="form-row">
+                    <label for="edit-amount">Amount:</label>
+                    <input type="number" id="edit-amount" value="${rowData.amount}" step="0.01" class="form-control">
+                </div>
+            `;
+            
+            // Show modal
+            modal.style.display = 'flex';
+        }
+        
+        function closeModal() {
+            modal.style.display = 'none';
+            currentRowData = null;
+        }
+        
+        function saveChanges() {
+            if (!currentRowData) return;
+            
+            const updatedData = {
+                name: document.getElementById('edit-name').value,
+                type: document.getElementById('edit-type').value,
+                status: document.getElementById('edit-status').value,
+                affiliate: document.getElementById('edit-affiliate').value,
+                buyer: document.getElementById('edit-buyer').value,
+                amount: parseFloat(document.getElementById('edit-amount').value)
+            };
+            
+            dataTable.updateRow(currentRowData.id, updatedData);
+            closeModal();
+        }
+        
+        // Add event listeners
+        closeButtons.forEach(button => {
+            button.addEventListener('click', closeModal);
+        });
+        
+        saveChangesBtn.addEventListener('click', saveChanges);
+        
+        // Close modal when clicking outside
+        modal.addEventListener('click', (event) => {
+            if (event.target === modal) {
+                closeModal();
+            }
+        });
+        
+        // Demo control buttons
+        document.getElementById('add-row-btn').addEventListener('click', () => {
+            const newId = Math.max(...dataTable.options.data.map(item => item.id)) + 1;
+            const newRow = {
+                id: newId,
+                name: `New Claim #${newId}`,
+                type: ['Motor', 'Home', 'Gadget', 'Travel'][Math.floor(Math.random() * 4)],
+                status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
+                affiliate: 'New Affiliate',
+                buyer: 'New Buyer',
+                amount: Math.round(Math.random() * 5000 * 100) / 100,
+                dateAdded: new Date().toISOString()
+            };
+            
+            dataTable.addRow(newRow);
+        });
+        
+        document.getElementById('update-row-btn').addEventListener('click', () => {
+            const data = dataTable.options.data;
+            if (data.length === 0) return;
+            
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const randomRow = data[randomIndex];
+            
+            const updatedData = {
+                status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
+                amount: Math.round(Math.random() * 5000 * 100) / 100
+            };
+            
+            dataTable.updateRow(randomRow.id, updatedData);
+        });
+        
+        document.getElementById('delete-row-btn').addEventListener('click', () => {
+            const data = dataTable.options.data;
+            if (data.length === 0) return;
+            
+            const randomIndex = Math.floor(Math.random() * data.length);
+            const randomRow = data[randomIndex];
+            
+            if (confirm(`Are you sure you want to delete "${randomRow.name}"?`)) {
+                dataTable.removeRow(randomRow.id);
+            }
+        });
+        
+        document.getElementById('toggle-loading-btn').addEventListener('click', () => {
+            dataTable.options.loading = !dataTable.options.loading;
+            dataTable.render();
+        });
+        
+        // Simulated WebSocket updates (for demo purposes)
+        let wsSimulation;
+        
+        function startWebSocketSimulation() {
+            // Clear any existing interval
+            if (wsSimulation) clearInterval(wsSimulation);
+            
+            // Simulate WebSocket updates every 10 seconds
+            wsSimulation = setInterval(() => {
+                const data = dataTable.options.data;
+                if (data.length === 0) return;
+                
+                // Randomly choose between adding, updating, or removing a row
+                const action = Math.floor(Math.random() * 3);
+                
+                switch (action) {
+                    case 0: // Add
+                        const newId = Math.max(...data.map(item => item.id)) + 1;
+                        const newRow = {
+                            id: newId,
+                            name: `WebSocket Claim #${newId}`,
+                            type: ['Motor', 'Home', 'Gadget', 'Travel'][Math.floor(Math.random() * 4)],
+                            status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
+                            affiliate: 'WebSocket Affiliate',
+                            buyer: 'WebSocket Buyer',
+                            amount: Math.round(Math.random() * 5000 * 100) / 100,
+                            dateAdded: new Date().toISOString()
+                        };
+                        
+                        console.log('WebSocket simulation: Adding row', newRow);
+                        dataTable.addRow(newRow);
+                        break;
+                        
+                    case 1: // Update
+                        const randomUpdateIndex = Math.floor(Math.random() * data.length);
+                        const randomUpdateRow = data[randomUpdateIndex];
+                        
+                        const updatedData = {
+                            status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
+                            amount: Math.round(Math.random() * 5000 * 100) / 100
+                        };
+                        
+                        console.log('WebSocket simulation: Updating row', randomUpdateRow.id, updatedData);
+                        dataTable.updateRow(randomUpdateRow.id, updatedData);
+                        break;
+                        
+                    case 2: // Remove
+                        if (data.length <= 3) {
+                            // Don't remove if we're down to just a few rows
+                            return;
+                        }
+                        
+                        const randomRemoveIndex = Math.floor(Math.random() * data.length);
+                        const randomRemoveRow = data[randomRemoveIndex];
+                        
+                        console.log('WebSocket simulation: Removing row', randomRemoveRow.id);
+                        dataTable.removeRow(randomRemoveRow.id);
+                        break;
+                }
+            }, 10000); // Every 10 seconds
+        }
+        
+        // Start the WebSocket simulation
+        startWebSocketSimulation();
+    </script>
+</body>
+</html>

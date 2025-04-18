@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modal Component Demo</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Base styles from the main project -->
+    <link rel="stylesheet" href="../../styles.css">
+    
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="../layout.css">
+    
+    <!-- Modal component styles -->
+    <link rel="stylesheet" href="modal.css">
+    
+    <!-- Demo-specific styles -->
+    <style>
+        /* Demo-specific styles */
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-section {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .demo-section h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #343a40;
+            font-size: 18px;
+        }
+        
+        .demo-controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .demo-controls button {
+            padding: 8px 15px;
+            background-color: #FFC107;
+            color: #212529;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .demo-controls button:hover {
+            background-color: #e0a800;
+        }
+        
+        .demo-controls button.btn-primary {
+            background-color: #007bff;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-primary:hover {
+            background-color: #0069d9;
+        }
+        
+        .demo-controls button.btn-secondary {
+            background-color: #6c757d;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-secondary:hover {
+            background-color: #5a6268;
+        }
+        
+        .demo-controls button.btn-success {
+            background-color: #28a745;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-success:hover {
+            background-color: #218838;
+        }
+        
+        .demo-controls button.btn-danger {
+            background-color: #dc3545;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-danger:hover {
+            background-color: #c82333;
+        }
+        
+        .demo-controls button.btn-info {
+            background-color: #17a2b8;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-info:hover {
+            background-color: #138496;
+        }
+        
+        .demo-controls button.btn-warning {
+            background-color: #ffc107;
+            color: #212529;
+        }
+        
+        .demo-controls button.btn-warning:hover {
+            background-color: #e0a800;
+        }
+        
+        .demo-controls button.btn-light {
+            background-color: #f8f9fa;
+            color: #212529;
+            border: 1px solid #dee2e6;
+        }
+        
+        .demo-controls button.btn-light:hover {
+            background-color: #e2e6ea;
+        }
+        
+        .demo-controls button.btn-dark {
+            background-color: #343a40;
+            color: #fff;
+        }
+        
+        .demo-controls button.btn-dark:hover {
+            background-color: #23272b;
+        }
+        
+        .demo-controls button:disabled {
+            opacity: 0.65;
+            cursor: not-allowed;
+        }
+        
+        .demo-code {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            font-size: 14px;
+            color: #212529;
+            overflow-x: auto;
+        }
+        
+        .demo-form {
+            margin-bottom: 20px;
+        }
+        
+        .demo-form-group {
+            margin-bottom: 15px;
+        }
+        
+        .demo-form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #343a40;
+        }
+        
+        .demo-form-group input,
+        .demo-form-group select,
+        .demo-form-group textarea {
+            display: block;
+            width: 100%;
+            padding: 0.375rem 0.75rem;
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #495057;
+            background-color: #fff;
+            background-clip: padding-box;
+            border: 1px solid #ced4da;
+            border-radius: 0.25rem;
+            transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+        }
+        
+        .demo-form-group input:focus,
+        .demo-form-group select:focus,
+        .demo-form-group textarea:focus {
+            color: #495057;
+            background-color: #fff;
+            border-color: #80bdff;
+            outline: 0;
+            box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+        }
+        
+        .demo-form-check {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .demo-form-check input {
+            margin-right: 10px;
+        }
+        
+        .demo-options {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 768px) {
+            .demo-controls {
+                flex-direction: column;
+            }
+            
+            .demo-controls button {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo content will be placed inside the layout -->
+    <div class="demo-container" style="display: none;">
+        <div class="demo-section">
+            <h2>Basic Modal Examples</h2>
+            <div class="demo-controls">
+                <button id="basic-modal-btn" class="btn-primary"><i class="fas fa-window-maximize"></i> Basic Modal</button>
+                <button id="alert-modal-btn" class="btn-info"><i class="fas fa-exclamation-circle"></i> Alert Modal</button>
+                <button id="confirm-modal-btn" class="btn-warning"><i class="fas fa-question-circle"></i> Confirm Modal</button>
+                <button id="prompt-modal-btn" class="btn-success"><i class="fas fa-keyboard"></i> Prompt Modal</button>
+            </div>
+            
+            <div class="demo-code">
+// Basic Modal
+const basicModal = new Modal({
+    title: 'Basic Modal',
+    content: 'This is a basic modal with default options.'
+});
+basicModal.open();
+
+// Alert Modal
+Modal.alert('This is an alert message!', 'Alert');
+
+// Confirm Modal
+Modal.confirm(
+    'Are you sure you want to proceed?', 
+    'Confirm Action',
+    () => console.log('Confirmed!'),
+    () => console.log('Cancelled!')
+);
+
+// Prompt Modal
+Modal.prompt(
+    'Please enter your name:',
+    '',
+    'User Input',
+    (value) => console.log('Input value:', value),
+    () => console.log('Prompt cancelled')
+);
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Modal Sizes</h2>
+            <div class="demo-controls">
+                <button id="small-modal-btn" class="btn-light"><i class="fas fa-compress"></i> Small Modal</button>
+                <button id="medium-modal-btn" class="btn-light"><i class="fas fa-square"></i> Medium Modal</button>
+                <button id="large-modal-btn" class="btn-light"><i class="fas fa-expand"></i> Large Modal</button>
+                <button id="fullscreen-modal-btn" class="btn-light"><i class="fas fa-expand-arrows-alt"></i> Fullscreen Modal</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Modal Positions</h2>
+            <div class="demo-controls">
+                <button id="center-modal-btn" class="btn-secondary"><i class="fas fa-dot-circle"></i> Center</button>
+                <button id="top-modal-btn" class="btn-secondary"><i class="fas fa-arrow-up"></i> Top</button>
+                <button id="right-modal-btn" class="btn-secondary"><i class="fas fa-arrow-right"></i> Right</button>
+                <button id="bottom-modal-btn" class="btn-secondary"><i class="fas fa-arrow-down"></i> Bottom</button>
+                <button id="left-modal-btn" class="btn-secondary"><i class="fas fa-arrow-left"></i> Left</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Modal Animations</h2>
+            <div class="demo-controls">
+                <button id="fade-modal-btn" class="btn-dark"><i class="fas fa-magic"></i> Fade Animation</button>
+                <button id="slide-modal-btn" class="btn-dark"><i class="fas fa-angle-double-down"></i> Slide Animation</button>
+                <button id="zoom-modal-btn" class="btn-dark"><i class="fas fa-search-plus"></i> Zoom Animation</button>
+                <button id="no-animation-modal-btn" class="btn-dark"><i class="fas fa-ban"></i> No Animation</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Advanced Features</h2>
+            <div class="demo-controls">
+                <button id="form-modal-btn" class="btn-primary"><i class="fas fa-wpforms"></i> Form Modal</button>
+                <button id="draggable-modal-btn" class="btn-warning"><i class="fas fa-arrows-alt"></i> Draggable Modal</button>
+                <button id="resizable-modal-btn" class="btn-info"><i class="fas fa-expand-alt"></i> Resizable Modal</button>
+                <button id="custom-buttons-modal-btn" class="btn-success"><i class="fas fa-thumbs-up"></i> Custom Buttons</button>
+            </div>
+        </div>
+        
+        <div class="demo-section">
+            <h2>Custom Modal</h2>
+            <div class="demo-form">
+                <div class="demo-form-group">
+                    <label for="modal-title">Modal Title</label>
+                    <input type="text" id="modal-title" value="Custom Modal">
+                </div>
+                <div class="demo-form-group">
+                    <label for="modal-content">Modal Content</label>
+                    <textarea id="modal-content" rows="3">This is a custom modal with user-defined options.</textarea>
+                </div>
+                <div class="demo-options">
+                    <div class="demo-form-group">
+                        <label for="modal-size">Size</label>
+                        <select id="modal-size">
+                            <option value="small">Small</option>
+                            <option value="medium" selected>Medium</option>
+                            <option value="large">Large</option>
+                            <option value="fullscreen">Fullscreen</option>
+                        </select>
+                    </div>
+                    <div class="demo-form-group">
+                        <label for="modal-position">Position</label>
+                        <select id="modal-position">
+                            <option value="center" selected>Center</option>
+                            <option value="top">Top</option>
+                            <option value="right">Right</option>
+                            <option value="bottom">Bottom</option>
+                            <option value="left">Left</option>
+                        </select>
+                    </div>
+                    <div class="demo-form-group">
+                        <label for="modal-animation">Animation</label>
+                        <select id="modal-animation">
+                            <option value="fade" selected>Fade</option>
+                            <option value="slide">Slide</option>
+                            <option value="zoom">Zoom</option>
+                            <option value="none">None</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-closable" checked>
+                    <label for="modal-closable">Closable</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-backdrop" checked>
+                    <label for="modal-backdrop">Show Backdrop</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-backdrop-closable" checked>
+                    <label for="modal-backdrop-closable">Backdrop Closable</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-esc-closable" checked>
+                    <label for="modal-esc-closable">ESC Closable</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-show-footer" checked>
+                    <label for="modal-show-footer">Show Footer</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-draggable">
+                    <label for="modal-draggable">Draggable</label>
+                </div>
+                <div class="demo-form-check">
+                    <input type="checkbox" id="modal-resizable">
+                    <label for="modal-resizable">Resizable</label>
+                </div>
+            </div>
+            <div class="demo-controls">
+                <button id="custom-modal-btn" class="btn-primary"><i class="fas fa-cog"></i> Open Custom Modal</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import as module -->
+    <script type="module">
+        import Layout from '../layout.js';
+        import Modal from './Modal.js';
+        
+        // Initialize layout
+        const layout = new Layout({
+            title: 'Modal Component Demo',
+            activeMenuItem: 'menu-modal-demo'
+        });
+        
+        // Add content header
+        layout.addContentHeader('Modal Component Demo', [
+            {
+                href: '/index.html',
+                icon: 'fas fa-home',
+                text: 'Back to Home'
+            }
+        ]);
+        
+        // Get demo container and show its content
+        const demoContainer = document.querySelector('.demo-container');
+        demoContainer.style.display = 'block';
+        
+        // Add demo content to layout
+        layout.addContent(demoContainer);
+        
+        // Basic Modal
+        document.getElementById('basic-modal-btn').addEventListener('click', () => {
+            const basicModal = new Modal({
+                title: 'Basic Modal',
+                content: 'This is a basic modal with default options.'
+            });
+            basicModal.open();
+        });
+        
+        // Alert Modal
+        document.getElementById('alert-modal-btn').addEventListener('click', () => {
+            Modal.alert('This is an alert message!', 'Alert', () => {
+                console.log('Alert closed');
+            });
+        });
+        
+        // Confirm Modal
+        document.getElementById('confirm-modal-btn').addEventListener('click', () => {
+            Modal.confirm(
+                'Are you sure you want to proceed?', 
+                'Confirm Action',
+                () => console.log('Confirmed!'),
+                () => console.log('Cancelled!')
+            );
+        });
+        
+        // Prompt Modal
+        document.getElementById('prompt-modal-btn').addEventListener('click', () => {
+            Modal.prompt(
+                'Please enter your name:',
+                '',
+                'User Input',
+                (value) => console.log('Input value:', value),
+                () => console.log('Prompt cancelled')
+            );
+        });
+        
+        // Modal Sizes
+        document.getElementById('small-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Small Modal',
+                content: 'This is a small modal dialog.',
+                size: 'small'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('medium-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Medium Modal',
+                content: 'This is a medium modal dialog.',
+                size: 'medium'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('large-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Large Modal',
+                content: 'This is a large modal dialog.',
+                size: 'large'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('fullscreen-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Fullscreen Modal',
+                content: 'This is a fullscreen modal dialog.',
+                size: 'fullscreen'
+            });
+            modal.open();
+        });
+        
+        // Modal Positions
+        document.getElementById('center-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Center Modal',
+                content: 'This modal is positioned in the center.',
+                position: 'center'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('top-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Top Modal',
+                content: 'This modal is positioned at the top.',
+                position: 'top'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('right-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Right Modal',
+                content: 'This modal is positioned at the right.',
+                position: 'right'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('bottom-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Bottom Modal',
+                content: 'This modal is positioned at the bottom.',
+                position: 'bottom'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('left-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Left Modal',
+                content: 'This modal is positioned at the left.',
+                position: 'left'
+            });
+            modal.open();
+        });
+        
+        // Modal Animations
+        document.getElementById('fade-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Fade Animation',
+                content: 'This modal uses a fade animation.',
+                animate: true,
+                animationType: 'fade'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('slide-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Slide Animation',
+                content: 'This modal uses a slide animation.',
+                animate: true,
+                animationType: 'slide'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('zoom-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Zoom Animation',
+                content: 'This modal uses a zoom animation.',
+                animate: true,
+                animationType: 'zoom'
+            });
+            modal.open();
+        });
+        
+        document.getElementById('no-animation-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'No Animation',
+                content: 'This modal has no animation.',
+                animate: false
+            });
+            modal.open();
+        });
+        
+        // Advanced Features
+        document.getElementById('form-modal-btn').addEventListener('click', () => {
+            const formContent = document.createElement('div');
+            formContent.innerHTML = `
+                <form id="demo-form">
+                    <div class="demo-form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" required>
+                    </div>
+                    <div class="demo-form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required>
+                    </div>
+                    <div class="demo-form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="3" required></textarea>
+                    </div>
+                </form>
+            `;
+            
+            const modal = new Modal({
+                title: 'Form Modal',
+                content: formContent,
+                confirmText: 'Submit',
+                cancelText: 'Cancel',
+                onConfirm: () => {
+                    const form = document.getElementById('demo-form');
+                    const name = document.getElementById('name').value;
+                    const email = document.getElementById('email').value;
+                    const message = document.getElementById('message').value;
+                    
+                    if (name && email && message) {
+                        console.log('Form submitted:', { name, email, message });
+                        return true;
+                    } else {
+                        alert('Please fill out all fields');
+                        return false;
+                    }
+                }
+            });
+            modal.open();
+        });
+        
+        document.getElementById('draggable-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Draggable Modal',
+                content: 'This modal can be dragged by its header. Try it!',
+                draggable: true
+            });
+            modal.open();
+        });
+        
+        document.getElementById('resizable-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Resizable Modal',
+                content: 'This modal can be resized using the handles on the edges and corners.',
+                resizable: true
+            });
+            modal.open();
+        });
+        
+        document.getElementById('custom-buttons-modal-btn').addEventListener('click', () => {
+            const modal = new Modal({
+                title: 'Custom Buttons',
+                content: 'This modal has custom buttons in the footer.',
+                confirmText: 'Save Changes',
+                cancelText: 'Discard',
+                confirmButtonClass: 'btn-success',
+                cancelButtonClass: 'btn-danger',
+                onConfirm: () => console.log('Changes saved!'),
+                onCancel: () => console.log('Changes discarded!')
+            });
+            modal.open();
+        });
+        
+        // Custom Modal
+        document.getElementById('custom-modal-btn').addEventListener('click', () => {
+            const title = document.getElementById('modal-title').value;
+            const content = document.getElementById('modal-content').value;
+            const size = document.getElementById('modal-size').value;
+            const position = document.getElementById('modal-position').value;
+            const animation = document.getElementById('modal-animation').value;
+            const closable = document.getElementById('modal-closable').checked;
+            const backdrop = document.getElementById('modal-backdrop').checked;
+            const backdropClosable = document.getElementById('modal-backdrop-closable').checked;
+            const escClosable = document.getElementById('modal-esc-closable').checked;
+            const showFooter = document.getElementById('modal-show-footer').checked;
+            const draggable = document.getElementById('modal-draggable').checked;
+            const resizable = document.getElementById('modal-resizable').checked;
+            
+            const modal = new Modal({
+                title,
+                content,
+                size,
+                position,
+                animate: animation !== 'none',
+                animationType: animation !== 'none' ? animation : 'fade',
+                closable,
+                backdrop,
+                backdropClosable,
+                escClosable,
+                showFooter,
+                draggable,
+                resizable
+            });
+            modal.open();
+        });
+    </script>
+</body>
+</html>

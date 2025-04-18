@@ -1,0 +1,518 @@
+/* --- Configuration (Colors & Fonts) --- */
+:root {
+    --sidebar-bg: #343A40; /* Dark Grey */
+    --sidebar-text: #f8f9fa; /* Light Grey / White */
+    --sidebar-active-bg: #495057; /* Slightly Lighter Grey */
+    --content-bg: #f8f9fa; /* Very Light Grey */
+    --header-bg: #ffffff; /* White */
+    --text-dark: #212529; /* Dark text for content area */
+    --accent-yellow: #FFC107; /* Yellow accent */
+    --border-color: #dee2e6; /* Light border color */
+    --font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; /* Example font */
+    --sidebar-width: 260px;
+}
+
+/* --- Basic Reset & Body --- */
+body {
+    margin: 0;
+    font-family: var(--font-family);
+    background-color: var(--content-bg);
+    color: var(--text-dark);
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+}
+
+/* --- App Layout --- */
+.app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 25px;
+    background-color: var(--header-bg);
+    border-bottom: 1px solid var(--border-color);
+    height: 60px; /* Fixed header height */
+    box-sizing: border-box;
+    position: sticky; /* Keep header visible */
+    top: 0;
+    z-index: 100; /* Ensure header is above sidebar scroll content */
+}
+
+.main-layout {
+    display: flex;
+    flex-grow: 1; /* Take remaining height */
+    /* Adjust height calc if header height changes */
+    height: calc(100vh - 60px);
+}
+
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--sidebar-bg);
+    color: var(--sidebar-text);
+    padding: 20px 0; /* Padding top/bottom, no padding left/right for full-width items */
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0; /* Prevent sidebar from shrinking */
+    overflow-y: auto; /* Allow sidebar scrolling if content exceeds height */
+}
+
+.content-area {
+    flex-grow: 1; /* Take remaining width */
+    padding: 30px;
+    overflow-y: auto; /* Add scroll if content overflows */
+}
+
+/* --- Header Elements --- */
+.header-logo img {
+    height: 40px; /* Control logo size */
+    width: auto;
+    display: block; /* Remove extra space below image */
+}
+
+.user-profile {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer; /* Indicate it's interactive */
+}
+
+.user-profile .avatar {
+    width: 32px;
+    height: 32px;
+    background-color: var(--accent-yellow);
+    color: var(--sidebar-bg);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    font-size: 14px;
+}
+
+/* --- Sidebar Elements --- */
+.sidebar-toggle-section {
+    padding: 0 20px 20px 20px; /* Padding around toggle */
+    border-bottom: 1px solid #555; /* Separator */
+    margin-bottom: 15px;
+}
+
+/* Basic Toggle Switch Styles */
+.toggle-switch {
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out labels */
+    cursor: pointer;
+    user-select: none; /* Prevent text selection */
+}
+
+.toggle-switch input {
+    display: none; /* Hide the actual checkbox */
+}
+
+.toggle-switch .slider {
+    position: relative;
+    display: inline-block;
+    width: 50px;
+    height: 26px;
+    background-color: #ccc; /* Inactive track */
+    border-radius: 13px;
+    transition: background-color 0.3s ease;
+}
+
+.toggle-switch .slider::before {
+    content: "";
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: white;
+    top: 3px;
+    left: 4px;
+    transition: transform 0.3s ease;
+}
+
+.toggle-switch input:checked + .slider {
+    background-color: var(--accent-yellow); /* Active track */
+}
+
+.toggle-switch input:checked + .slider::before {
+    transform: translateX(24px); /* Move the handle */
+}
+
+.toggle-switch .label {
+    font-size: 14px;
+    font-weight: 500;
+    padding: 0 5px;
+}
+ .toggle-switch .label.admin-label {
+    color: #aaa; /* Default state */
+ }
+ .toggle-switch input:checked ~ .label.admin-label {
+    color: var(--accent-yellow); /* Active state */
+    font-weight: bold;
+ }
+  .toggle-switch input:not(:checked) ~ .label.claims-label {
+    color: var(--sidebar-text); /* Active state */
+    font-weight: bold;
+ }
+
+
+.sidebar-nav {
+    flex-grow: 1; /* Allow nav to take remaining space */
+    /* overflow-y: auto; - Removed, sidebar itself scrolls */
+}
+
+.sidebar-nav ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.sidebar-nav li a {
+    display: flex;
+    align-items: center;
+    padding: 12px 20px;
+    color: var(--sidebar-text);
+    text-decoration: none;
+    font-size: 15px;
+    transition: background-color 0.2s ease;
+    position: relative; /* For active indicator */
+}
+
+.sidebar-nav li a i {
+    margin-right: 15px; /* Space between icon and text */
+    width: 20px; /* Fixed width for alignment */
+    text-align: center;
+    font-size: 16px;
+}
+
+.sidebar-nav li a:hover {
+    background-color: var(--sidebar-active-bg);
+}
+
+.sidebar-nav li.active a {
+    background-color: var(--sidebar-active-bg);
+    font-weight: bold;
+}
+
+ /* Active indicator bar */
+.sidebar-nav li.active a::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background-color: var(--accent-yellow);
+}
+
+/* Hide admin menu by default */
+#admin-menu {
+    display: none;
+}
+
+/* --- Content Area Elements --- */
+.content-area h1 {
+    margin-top: 0;
+    font-weight: 600;
+    color: var(--text-dark);
+    margin-bottom: 20px; /* Add default bottom margin */
+}
+
+.loading-placeholder {
+    text-align: center;
+    padding-top: 50px;
+    color: #6c757d;
+}
+
+
+/* --- Content Header & Actions --- */
+.content-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.content-header h1 {
+     margin-bottom: 0; /* Remove margin when part of this header */
+}
+
+.actions {
+    display: flex;
+    gap: 10px;
+}
+
+/* --- Basic Button Styles --- */
+.btn {
+    padding: 8px 15px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    display: inline-flex; /* Align icon and text */
+    align-items: center;
+    gap: 5px; /* Space between icon and text */
+    transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+    text-decoration: none; /* Remove underline if used as link */
+    line-height: 1.5; /* Consistency */
+}
+
+.btn-primary {
+    background-color: var(--accent-yellow);
+    color: var(--sidebar-bg); /* High contrast */
+    border-color: var(--accent-yellow);
+}
+.btn-primary:hover {
+     background-color: #e0a800; /* Darken yellow */
+     border-color: #e0a800;
+     color: var(--sidebar-bg);
+}
+
+.btn-secondary {
+     background-color: #ffffff; /* White */
+     color: var(--text-dark);
+     border: 1px solid var(--border-color);
+}
+ .btn-secondary:hover {
+     background-color: #f8f9fa; /* Slightly grey */
+     color: var(--text-dark);
+ }
+ .btn:disabled {
+     opacity: 0.6;
+     cursor: not-allowed;
+ }
+
+/* --- Tabs --- */
+.tabs-container {
+    margin-bottom: 20px;
+    border-bottom: 1px solid var(--border-color);
+    padding-bottom: -1px; /* Overlap border */
+    display: flex;
+    gap: 5px;
+    flex-wrap: wrap; /* Allow tabs to wrap */
+}
+.tab-button {
+    padding: 10px 15px;
+    border: 1px solid transparent;
+    border-bottom: none;
+    background-color: transparent;
+    cursor: pointer;
+    font-size: 14px;
+    color: #6c757d; /* Greyish text */
+    border-radius: 4px 4px 0 0; /* Rounded top corners */
+    position: relative;
+    bottom: -1px; /* Align with border */
+     transition: background-color 0.2s ease, color 0.2s ease, border-color 0.2s ease;
+
+}
+.tab-button:hover {
+     color: var(--text-dark);
+}
+.tab-button.active {
+    background-color: var(--content-bg); /* Match content background */
+    border-color: var(--border-color);
+    border-bottom: 1px solid var(--content-bg); /* Hide bottom border part */
+    color: var(--text-dark);
+    font-weight: 600;
+}
+
+/* --- Table Styles --- */
+.table-wrapper {
+    background-color: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    overflow-x: auto; /* Handle potential horizontal scroll */
+    margin-bottom: 20px;
+}
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+.data-table th,
+.data-table td {
+    padding: 12px 15px;
+    text-align: left;
+    border-bottom: 1px solid var(--border-color);
+    vertical-align: middle; /* Align content vertically */
+     font-size: 14px;
+     white-space: nowrap; /* Prevent text wrapping in cells initially */
+}
+.data-table td:first-child, /* Allow wrapping for name/description fields */
+.data-table th:first-child {
+    white-space: normal;
+}
+
+
+ .data-table tbody tr:last-child td {
+     border-bottom: none; /* Remove border from last row */
+ }
+
+.data-table thead th {
+    background-color: #f8f9fa; /* Light grey header */
+    font-weight: 600;
+    color: #6c757d; /* Greyish text */
+    text-transform: uppercase;
+    font-size: 12px;
+}
+
+.data-table tbody tr:hover {
+    background-color: #f1f3f5; /* Light hover effect */
+    cursor: pointer;
+}
+
+/* --- Status Badges --- */
+.status-badge {
+    display: inline-block;
+    padding: 4px 8px;
+    font-size: 12px;
+    font-weight: 600;
+    border-radius: 4px;
+    line-height: 1;
+    text-transform: uppercase;
+    white-space: nowrap;
+}
+
+/* Define colors for each status */
+.status-new { background-color: #cfe2ff; color: #0a58ca; } /* Blue */
+.status-assigned { background-color: #ffedd5; color: #9a3412; } /* Orange */
+.status-accepted { background-color: #d1fae5; color: #047857; } /* Green */
+.status-rejected { background-color: #fee2e2; color: #b91c1c; } /* Red */
+.status-settled { background-color: #e5e7eb; color: #4b5563; } /* Grey */
+
+
+/* --- Pagination --- */
+.pagination-container {
+     display: flex;
+     justify-content: space-between;
+     align-items: center;
+     padding-top: 15px;
+     font-size: 14px;
+     color: #6c757d;
+     flex-wrap: wrap; /* Allow wrapping on small screens */
+     gap: 10px;
+}
+ .pagination-buttons {
+     display: flex;
+     gap: 5px;
+ }
+
+/* --- Modal Styles --- */
+.modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1050; /* Ensure it's on top of everything */
+    padding: 15px; /* Add padding for small screens */
+    box-sizing: border-box;
+}
+.modal-content {
+    background-color: #fff;
+    padding: 0; /* Padding handled by sections */
+    border-radius: 8px;
+    width: 100%; /* Full width on small screens */
+    max-width: 600px; /* Max width for the modal */
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh; /* Limit height */
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px 20px;
+    border-bottom: 1px solid var(--border-color);
+    flex-shrink: 0; /* Prevent shrinking */
+}
+ .modal-header h2 {
+     margin: 0;
+     font-size: 18px;
+ }
+
+ .modal-body {
+     padding: 20px;
+     flex-grow: 1; /* Allow body to grow */
+     overflow-y: auto; /* Scroll if content is long */
+ }
+ .modal-footer {
+     padding: 15px 20px;
+     border-top: 1px solid var(--border-color);
+     display: flex;
+     justify-content: flex-end; /* Align buttons to the right */
+     gap: 10px;
+     flex-shrink: 0; /* Prevent shrinking */
+ }
+
+  .modal-close-button {
+     background: none;
+     border: none;
+     cursor: pointer;
+     padding: 0;
+     color: #6c757d;
+ }
+ .modal-header .modal-close-button {
+      font-size: 24px; /* Larger X in header */
+      line-height: 1;
+ }
+ .modal-footer .modal-close-button {
+      font-size: 14px; /* Match other footer buttons */
+      /* Inherits .btn styles if class is added */
+ }
+
+/* --- Chart Styles --- */
+.chart-container {
+    background-color: #fff;
+    padding: 20px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    margin-bottom: 25px;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+    flex-wrap: wrap; /* Allow wrapping */
+    gap: 10px;
+}
+
+.chart-header h2 {
+     margin: 0;
+     font-size: 16px;
+     font-weight: 600;
+}
+
+.chart-header select {
+    padding: 5px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    font-size: 13px;
+    background-color: #fff; /* Ensure background */
+}
+
+.pie-charts-row {
+    display: flex;
+    gap: 25px; /* Space between pie charts */
+    flex-wrap: wrap; /* Allow wrapping on smaller screens */
+}
+
+.pie-chart-wrapper {
+     flex: 1; /* Each pie chart takes equal space */
+     min-width: 250px; /* Minimum width before wrapping */
+}
+
+/* Ensure canvas is responsive within its container */
+canvas {
+    max-width: 100%;
+    height: auto !important; /* Override potential inline height from chart.js if needed */
+}

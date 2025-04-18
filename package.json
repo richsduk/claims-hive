@@ -1,0 +1,31 @@
+{
+  "name": "claims-hive",
+  "version": "0.1.0",
+  "description": "A reusable component library for the Claims Hive project",
+  "main": "index.html",
+  "scripts": {
+    "start": "./start.sh",
+    "stop": "./stop.sh",
+    "docker:build": "docker-compose build",
+    "docker:up": "docker-compose up -d",
+    "docker:down": "docker-compose down"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/yourusername/claims-hive.git"
+  },
+  "keywords": [
+    "claims",
+    "components",
+    "datatable",
+    "responsive"
+  ],
+  "author": "",
+  "license": "SEE LICENSE IN LICENSE",
+  "bugs": {
+    "url": "https://github.com/yourusername/claims-hive/issues"
+  },
+  "homepage": "https://github.com/yourusername/claims-hive#readme",
+  "devDependencies": {},
+  "dependencies": {}
+}

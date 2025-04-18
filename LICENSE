@@ -1,0 +1,27 @@
+CLAIMS HIVE PROPRIETARY LICENSE
+
+Copyright (c) 2025 Claims Hive. All rights reserved.
+
+This software and associated documentation files (the "Software") are the proprietary property of Claims Hive and are protected by copyright law and international treaties. Unauthorized reproduction or distribution of this Software, or any portion of it, may result in severe civil and criminal penalties, and will be prosecuted to the maximum extent possible under the law.
+
+The Software is provided to authorized licensees for use in accordance with the terms of their specific license agreement with Claims Hive.
+
+---
+
+THIRD-PARTY ACKNOWLEDGMENTS
+
+This software includes the following third-party libraries, which are subject to their respective licenses:
+
+1. Font Awesome (v6.0.0)
+   - License: Font Awesome Free License
+   - https://fontawesome.com/license/free
+
+2. Chart.js
+   - License: MIT
+   - https://github.com/chartjs/Chart.js/blob/master/LICENSE.md
+
+3. Nginx
+   - License: BSD-like
+   - https://nginx.org/LICENSE
+
+These acknowledgments are made in good faith. If you believe any third-party software has been omitted or incorrectly acknowledged, please contact Claims Hive.

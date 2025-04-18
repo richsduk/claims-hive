@@ -1,0 +1,247 @@
+/**
+ * Charts Component Styles for Claims Hive
+ */
+
+.charts-container {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    min-height: 300px;
+}
+
+.charts-container canvas {
+    width: 100%;
+    height: 100%;
+}
+
+/* Loading state */
+.charts-container.loading::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(255, 255, 255, 0.7);
+    z-index: 1;
+}
+
+.charts-container.loading::after {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 40px;
+    height: 40px;
+    margin-top: -20px;
+    margin-left: -20px;
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    z-index: 2;
+}
+
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Chart types */
+.charts-container.bar-chart,
+.charts-container.line-chart {
+    aspect-ratio: 16 / 9;
+}
+
+.charts-container.pie-chart,
+.charts-container.doughnut-chart,
+.charts-container.polar-area-chart {
+    aspect-ratio: 1 / 1;
+}
+
+.charts-container.radar-chart {
+    aspect-ratio: 4 / 3;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .charts-container {
+        min-height: 250px;
+    }
+    
+    .charts-container.bar-chart,
+    .charts-container.line-chart {
+        aspect-ratio: 4 / 3;
+    }
+}
+
+@media (max-width: 480px) {
+    .charts-container {
+        min-height: 200px;
+    }
+    
+    .charts-container.bar-chart,
+    .charts-container.line-chart,
+    .charts-container.radar-chart {
+        aspect-ratio: 1 / 1;
+    }
+}
+
+/* Chart legend */
+.charts-legend {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    margin-top: 15px;
+    gap: 10px;
+}
+
+.charts-legend-item {
+    display: flex;
+    align-items: center;
+    margin-right: 15px;
+    cursor: pointer;
+}
+
+.charts-legend-color {
+    width: 15px;
+    height: 15px;
+    margin-right: 5px;
+    border-radius: 3px;
+}
+
+.charts-legend-label {
+    font-size: 14px;
+}
+
+/* Chart tooltip */
+.charts-tooltip {
+    position: absolute;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 4px;
+    pointer-events: none;
+    z-index: 10;
+    font-size: 14px;
+    max-width: 200px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    transition: opacity 0.3s ease;
+}
+
+.charts-tooltip-title {
+    font-weight: bold;
+    margin-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
+    padding-bottom: 5px;
+}
+
+.charts-tooltip-value {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 3px;
+}
+
+.charts-tooltip-color {
+    display: inline-block;
+    width: 10px;
+    height: 10px;
+    margin-right: 5px;
+    border-radius: 2px;
+}
+
+/* Chart controls */
+.charts-controls {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 10px;
+    gap: 5px;
+}
+
+.charts-control-btn {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.charts-control-btn:hover {
+    background-color: #e9ecef;
+}
+
+.charts-control-btn i {
+    font-size: 12px;
+}
+
+/* Chart types */
+.charts-type-selector {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin-bottom: 15px;
+}
+
+.charts-type-btn {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 5px 10px;
+    font-size: 14px;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.charts-type-btn.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.charts-type-btn:hover:not(.active) {
+    background-color: #e9ecef;
+}
+
+/* No data state */
+.charts-no-data {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    min-height: 200px;
+    color: #6c757d;
+    text-align: center;
+    padding: 20px;
+}
+
+.charts-no-data i {
+    font-size: 48px;
+    margin-bottom: 10px;
+    opacity: 0.5;
+}
+
+.charts-no-data-message {
+    font-size: 16px;
+    margin-bottom: 15px;
+}
+
+.charts-no-data-action {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    padding: 8px 15px;
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.charts-no-data-action:hover {
+    background-color: #0069d9;
+}

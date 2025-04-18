@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Charts Component Demo</title>
+    
+    <!-- Font Awesome for icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Base styles from the main project -->
+    <link rel="stylesheet" href="../../styles.css">
+    
+    <!-- Layout styles -->
+    <link rel="stylesheet" href="../layout.css">
+    
+    <!-- Charts component styles -->
+    <link rel="stylesheet" href="charts.css">
+    
+    <!-- Demo-specific styles -->
+    <style>
+        /* Demo-specific styles */
+        .demo-container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+        
+        .demo-controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .demo-controls button {
+            padding: 8px 15px;
+            background-color: #FFC107;
+            color: #212529;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .demo-controls button:hover {
+            background-color: #e0a800;
+        }
+        
+        .chart-types {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .chart-type-btn {
+            padding: 8px 15px;
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .chart-type-btn.active {
+            background-color: #007bff;
+            color: white;
+            border-color: #007bff;
+        }
+        
+        .chart-type-btn:hover:not(.active) {
+            background-color: #e9ecef;
+        }
+        
+        .chart-container {
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container h2 {
+            margin-top: 0;
+            margin-bottom: 15px;
+            color: #343a40;
+            font-size: 18px;
+        }
+        
+        .chart-row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-col {
+            flex: 1;
+            min-width: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .chart-row {
+                flex-direction: column;
+            }
+            
+            .chart-col {
+                min-width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Demo content will be placed inside the layout -->
+    <div class="demo-container" style="display: none;">
+        <div class="demo-controls">
+            <button id="update-data-btn"><i class="fas fa-sync"></i> Update Data</button>
+            <button id="add-dataset-btn"><i class="fas fa-plus"></i> Add Dataset</button>
+            <button id="remove-dataset-btn"><i class="fas fa-minus"></i> Remove Dataset</button>
+            <button id="toggle-loading-btn"><i class="fas fa-spinner"></i> Toggle Loading</button>
+        </div>
+        
+        <div class="chart-types">
+            <button class="chart-type-btn active" data-type="bar">Bar Chart</button>
+            <button class="chart-type-btn" data-type="line">Line Chart</button>
+            <button class="chart-type-btn" data-type="pie">Pie Chart</button>
+            <button class="chart-type-btn" data-type="doughnut">Doughnut Chart</button>
+            <button class="chart-type-btn" data-type="radar">Radar Chart</button>
+            <button class="chart-type-btn" data-type="polarArea">Polar Area Chart</button>
+        </div>
+        
+        <div class="chart-row">
+            <div class="chart-col">
+                <div class="chart-container">
+                    <h2>Claims by Type</h2>
+                    <div id="claims-by-type-chart"></div>
+                </div>
+            </div>
+            <div class="chart-col">
+                <div class="chart-container">
+                    <h2>Claims by Status</h2>
+                    <div id="claims-by-status-chart"></div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chart-container">
+            <h2>Claims Over Time</h2>
+            <div id="claims-over-time-chart"></div>
+        </div>
+        
+        <div class="chart-row">
+            <div class="chart-col">
+                <div class="chart-container">
+                    <h2>Claims by Affiliate</h2>
+                    <div id="claims-by-affiliate-chart"></div>
+                </div>
+            </div>
+            <div class="chart-col">
+                <div class="chart-container">
+                    <h2>Claims by Buyer</h2>
+                    <div id="claims-by-buyer-chart"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Import as module -->
+    <script type="module">
+        import Layout from '../layout.js';
+        import Charts from './Charts.js';
+        
+        // Initialize layout
+        const layout = new Layout({
+            title: 'Charts Component Demo',
+            activeMenuItem: 'menu-charts-demo'
+        });
+        
+        // Add content header
+        layout.addContentHeader('Charts Component Demo', [
+            {
+                href: '/index.html',
+                icon: 'fas fa-home',
+                text: 'Back to Home'
+            }
+        ]);
+        
+        // Get demo container and show its content
+        const demoContainer = document.querySelector('.demo-container');
+        demoContainer.style.display = 'block';
+        
+        // Add demo content to layout
+        layout.addContent(demoContainer);
+        
+        // Sample data
+        const claimTypes = ['Motor', 'Home', 'Gadget', 'Travel', 'Pet', 'Business'];
+        const claimStatuses = ['New', 'Assigned', 'Accepted', 'Rejected', 'Settled'];
+        const affiliates = ['Affiliate Partners Inc.', 'Regional Affiliates', 'Tech Affiliates', 'Travel Agents United', 'Insurance Brokers Ltd'];
+        const buyers = ['Major Buyer Co.', 'Insurance Giant Ltd', 'Gadget Protect', 'Air Insure', 'Home Coverage Inc.'];
+        
+        // Generate random data
+        function generateRandomData(labels, count = 1) {
+            return labels.map(label => ({
+                label,
+                value: Math.floor(Math.random() * 1000)
+            }));
+        }
+        
+        // Generate time series data
+        function generateTimeSeriesData(days = 30, datasets = 1) {
+            const labels = [];
+            const now = new Date();
+            
+            for (let i = days - 1; i >= 0; i--) {
+                const date = new Date(now);
+                date.setDate(now.getDate() - i);
+                labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+            }
+            
+            const data = {
+                labels,
+                datasets: []
+            };
+            
+            const datasetLabels = ['New Claims', 'Settled Claims', 'Rejected Claims', 'Total Active Claims'];
+            
+            for (let i = 0; i < datasets; i++) {
+                if (i >= datasetLabels.length) break;
+                
+                const values = [];
+                let lastValue = Math.floor(Math.random() * 50) + 10;
+                
+                for (let j = 0; j < days; j++) {
+                    // Generate a value that's somewhat related to the previous value
+                    const change = Math.floor(Math.random() * 20) - 10; // -10 to +10
+                    lastValue = Math.max(0, lastValue + change);
+                    values.push(lastValue);
+                }
+                
+                data.datasets.push({
+                    label: datasetLabels[i],
+                    data: values
+                });
+            }
+            
+            return data;
+        }
+        
+        // Format data for different chart types
+        function formatDataForChartType(data, type) {
+            if (['pie', 'doughnut', 'polarArea'].includes(type)) {
+                return {
+                    labels: data.map(item => item.label),
+                    datasets: [{
+                        data: data.map(item => item.value)
+                    }]
+                };
+            } else if (type === 'radar') {
+                return {
+                    labels: data.map(item => item.label),
+                    datasets: [{
+                        label: 'Claims',
+                        data: data.map(item => item.value)
+                    }]
+                };
+            } else {
+                return {
+                    labels: data.map(item => item.label),
+                    datasets: [{
+                        label: 'Claims',
+                        data: data.map(item => item.value)
+                    }]
+                };
+            }
+        }
+        
+        // Initialize charts
+        let currentChartType = 'bar';
+        let charts = {};
+        
+        // Claims by Type Chart
+        const claimsByTypeData = generateRandomData(claimTypes);
+        charts.claimsByType = new Charts('#claims-by-type-chart', {
+            type: currentChartType,
+            data: formatDataForChartType(claimsByTypeData, currentChartType),
+            onClick: (data) => {
+                console.log('Claims by Type clicked:', data);
+                alert(`${data.label}: ${data.value} claims`);
+            }
+        });
+        
+        // Claims by Status Chart
+        const claimsByStatusData = generateRandomData(claimStatuses);
+        charts.claimsByStatus = new Charts('#claims-by-status-chart', {
+            type: currentChartType,
+            data: formatDataForChartType(claimsByStatusData, currentChartType),
+            onClick: (data) => {
+                console.log('Claims by Status clicked:', data);
+                alert(`${data.label}: ${data.value} claims`);
+            }
+        });
+        
+        // Claims Over Time Chart
+        const claimsOverTimeData = generateTimeSeriesData(30, 3);
+        charts.claimsOverTime = new Charts('#claims-over-time-chart', {
+            type: 'line',
+            data: claimsOverTimeData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+        
+        // Claims by Affiliate Chart
+        const claimsByAffiliateData = generateRandomData(affiliates);
+        charts.claimsByAffiliate = new Charts('#claims-by-affiliate-chart', {
+            type: currentChartType,
+            data: formatDataForChartType(claimsByAffiliateData, currentChartType),
+            onClick: (data) => {
+                console.log('Claims by Affiliate clicked:', data);
+                alert(`${data.label}: ${data.value} claims`);
+            }
+        });
+        
+        // Claims by Buyer Chart
+        const claimsByBuyerData = generateRandomData(buyers);
+        charts.claimsByBuyer = new Charts('#claims-by-buyer-chart', {
+            type: currentChartType,
+            data: formatDataForChartType(claimsByBuyerData, currentChartType),
+            onClick: (data) => {
+                console.log('Claims by Buyer clicked:', data);
+                alert(`${data.label}: ${data.value} claims`);
+            }
+        });
+        
+        // Chart type buttons
+        document.querySelectorAll('.chart-type-btn').forEach(button => {
+            button.addEventListener('click', () => {
+                // Update active button
+                document.querySelectorAll('.chart-type-btn').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                button.classList.add('active');
+                
+                // Get chart type
+                const type = button.dataset.type;
+                currentChartType = type;
+                
+                // Update charts
+                updateChartTypes(type);
+            });
+        });
+        
+        // Update chart types
+        function updateChartTypes(type) {
+            // Skip the time series chart
+            const chartsToUpdate = ['claimsByType', 'claimsByStatus', 'claimsByAffiliate', 'claimsByBuyer'];
+            
+            chartsToUpdate.forEach(chartKey => {
+                const chart = charts[chartKey];
+                
+                // Destroy the old chart
+                chart.destroy();
+                
+                // Get the container
+                const container = chart.container;
+                
+                // Get the data
+                let data;
+                switch (chartKey) {
+                    case 'claimsByType':
+                        data = generateRandomData(claimTypes);
+                        break;
+                    case 'claimsByStatus':
+                        data = generateRandomData(claimStatuses);
+                        break;
+                    case 'claimsByAffiliate':
+                        data = generateRandomData(affiliates);
+                        break;
+                    case 'claimsByBuyer':
+                        data = generateRandomData(buyers);
+                        break;
+                }
+                
+                // Create a new chart
+                charts[chartKey] = new Charts(`#${container.id}`, {
+                    type: type,
+                    data: formatDataForChartType(data, type),
+                    onClick: (data) => {
+                        console.log(`${chartKey} clicked:`, data);
+                        alert(`${data.label}: ${data.value} claims`);
+                    }
+                });
+            });
+        }
+        
+        // Demo control buttons
+        document.getElementById('update-data-btn').addEventListener('click', () => {
+            // Update all charts with new random data
+            const claimsByTypeData = generateRandomData(claimTypes);
+            charts.claimsByType.updateChart(formatDataForChartType(claimsByTypeData, currentChartType));
+            
+            const claimsByStatusData = generateRandomData(claimStatuses);
+            charts.claimsByStatus.updateChart(formatDataForChartType(claimsByStatusData, currentChartType));
+            
+            const claimsOverTimeData = generateTimeSeriesData(30, 3);
+            charts.claimsOverTime.updateChart(claimsOverTimeData);
+            
+            const claimsByAffiliateData = generateRandomData(affiliates);
+            charts.claimsByAffiliate.updateChart(formatDataForChartType(claimsByAffiliateData, currentChartType));
+            
+            const claimsByBuyerData = generateRandomData(buyers);
+            charts.claimsByBuyer.updateChart(formatDataForChartType(claimsByBuyerData, currentChartType));
+        });
+        
+        document.getElementById('add-dataset-btn').addEventListener('click', () => {
+            // Add a dataset to the time series chart
+            const days = 30;
+            const values = [];
+            let lastValue = Math.floor(Math.random() * 50) + 10;
+            
+            for (let j = 0; j < days; j++) {
+                const change = Math.floor(Math.random() * 20) - 10;
+                lastValue = Math.max(0, lastValue + change);
+                values.push(lastValue);
+            }
+            
+            const newDataset = {
+                label: `Dataset ${charts.claimsOverTime.chart.data.datasets.length + 1}`,
+                data: values
+            };
+            
+            charts.claimsOverTime.addDataset(newDataset);
+        });
+        
+        document.getElementById('remove-dataset-btn').addEventListener('click', () => {
+            // Remove the last dataset from the time series chart
+            if (charts.claimsOverTime.chart.data.datasets.length > 1) {
+                charts.claimsOverTime.removeDataset(charts.claimsOverTime.chart.data.datasets.length - 1);
+            } else {
+                alert('Cannot remove the last dataset');
+            }
+        });
+        
+        document.getElementById('toggle-loading-btn').addEventListener('click', () => {
+            // Toggle loading state for all charts
+            Object.values(charts).forEach(chart => {
+                chart.container.classList.toggle('loading');
+            });
+        });
+    </script>
+</body>
+</html>
