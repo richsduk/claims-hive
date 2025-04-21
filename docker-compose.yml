@@ -8,3 +8,28 @@ services:
     volumes:
       - .:/usr/share/nginx/html
     restart: unless-stopped
+    depends_on:
+      - db
+    environment:
+      - DB_HOST=db
+      - DB_PORT=5432
+      - DB_NAME=claims_hive
+      - DB_USER=claims_hive_user
+      - DB_PASSWORD=claims_hive_password
+
+  db:
+    image: postgres:14
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./database/schema.sql:/docker-entrypoint-initdb.d/1-schema.sql
+      - ./database/seeds.sql:/docker-entrypoint-initdb.d/2-seeds.sql
+    environment:
+      - POSTGRES_DB=claims_hive
+      - POSTGRES_USER=claims_hive_user
+      - POSTGRES_PASSWORD=claims_hive_password
+    restart: unless-stopped
+
+volumes:
+  postgres_data:

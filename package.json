@@ -2,13 +2,15 @@
   "name": "claims-hive",
   "version": "0.1.0",
   "description": "A reusable component library for the Claims Hive project",
-  "main": "index.html",
+  "main": "server/index.js",
   "scripts": {
     "start": "./start.sh",
     "stop": "./stop.sh",
     "docker:build": "docker-compose build",
     "docker:up": "docker-compose up -d",
-    "docker:down": "docker-compose down"
+    "docker:down": "docker-compose down",
+    "server": "node server/index.js",
+    "dev": "nodemon server/index.js"
   },
   "repository": {
     "type": "git",
@@ -26,6 +28,16 @@
     "url": "https://github.com/yourusername/claims-hive/issues"
   },
   "homepage": "https://github.com/yourusername/claims-hive#readme",
-  "devDependencies": {},
-  "dependencies": {}
+  "devDependencies": {
+    "nodemon": "^2.0.22"
+  },
+  "dependencies": {
+    "bcrypt": "^5.1.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.0.3",
+    "express": "^4.18.2",
+    "jsonwebtoken": "^9.0.0",
+    "pg": "^8.10.0",
+    "ws": "^8.13.0"
+  }
 }

@@ -1,11 +1,20 @@
-FROM nginx:alpine
+FROM node:18-alpine
 
-# Copy website files
-COPY . /usr/share/nginx/html
+# Create app directory
+WORKDIR /usr/src/app
 
-# Copy nginx configuration
-COPY nginx.conf /etc/nginx/conf.d/default.conf
+# Install app dependencies
+# A wildcard is used to ensure both package.json AND package-lock.json are copied
+COPY package*.json ./
 
+# Install dependencies
+RUN npm install
+
+# Bundle app source
+COPY . .
+
+# Expose the port the app runs on
 EXPOSE 5000
 
-CMD ["nginx", "-g", "daemon off;"]
+# Command to run the application
+CMD ["node", "server/index.js"]

@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User Role Permissions Editor</title>
+    <style>
+        body {
+            font-family: sans-serif;
+            margin: 20px;
+            background-color: #f4f7f6;
+            color: #333;
+        }
+
+        .container {
+            background-color: #ffffff;
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            max-width: 900px;
+            margin: auto;
+        }
+
+        h1 {
+            text-align: center;
+            color: #2c3e50;
+            margin-bottom: 25px;
+        }
+
+        .role-selector {
+            margin-bottom: 25px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .role-selector label {
+            font-weight: bold;
+            color: #34495e;
+        }
+
+        .role-selector select,
+        .role-selector button {
+            padding: 8px 12px;
+            border: 1px solid #bdc3c7;
+            border-radius: 4px;
+            font-size: 1em;
+        }
+
+        .role-selector select {
+            flex-grow: 1; /* Allow select to take available space */
+        }
+
+        .role-selector button {
+            background-color: #3498db;
+            color: white;
+            cursor: pointer;
+            border: none;
+            transition: background-color 0.2s ease;
+        }
+
+        .role-selector button:hover {
+            background-color: #2980b9;
+        }
+
+        #permissionsTable {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+            table-layout: fixed; /* Helps with consistent column widths */
+        }
+
+        #permissionsTable th,
+        #permissionsTable td {
+            border: 1px solid #ddd;
+            padding: 10px 8px; /* Adjusted padding */
+            text-align: center;
+            vertical-align: middle;
+        }
+
+        #permissionsTable th {
+            background-color: #ecf0f1;
+            color: #34495e;
+            font-weight: bold;
+        }
+
+        #permissionsTable thead tr:first-child th { /* Top header row */
+            background-color: #bdc3c7;
+            color: #2c3e50;
+        }
+
+         #permissionsTable thead tr:first-child th:first-child { /* Keep first cell same as others */
+             background-color: #ecf0f1;
+         }
+
+        #permissionsTable tbody tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        #permissionsTable tbody tr:hover {
+            background-color: #f1f1f1;
+        }
+
+        #permissionsTable td:first-child { /* Data Table name column */
+            text-align: left;
+            font-weight: bold;
+            width: 15%; /* Allocate specific width */
+        }
+
+        .crud-group {
+            display: inline-block; /* Keep CRUD checkboxes together */
+            margin: 0 3px; /* Spacing between checkboxes */
+            white-space: nowrap; /* Prevent wrapping within a CRUD group */
+        }
+
+        .crud-group label {
+            display: inline-block;
+            margin-right: 5px; /* Space between checkbox and its letter */
+            font-size: 0.9em;
+            cursor: pointer;
+        }
+
+        .crud-group input[type="checkbox"] {
+            margin-right: 2px;
+            vertical-align: middle;
+            cursor: pointer;
+        }
+
+        /* Adjust cell widths for scope columns */
+        #permissionsTable th:nth-child(n+2), /* Select scope headers */
+        #permissionsTable td:nth-child(n+2) { /* Select scope cells */
+             width: 28.33%; /* Divide remaining width equally */
+        }
+
+
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Edit User Role Permissions</h1>
+
+        <div class="role-selector">
+            <label for="roleSelect">Select Role:</label>
+            <select id="roleSelect">
+                <!-- Roles will be populated by JS -->
+            </select>
+            <button id="addRoleBtn">Add New Role</button>
+        </div>
+
+        <table id="permissionsTable">
+            <thead>
+                <tr>
+                    <th rowspan="2">Data Table</th>
+                    <th colspan="4">Global Access</th>
+                    <th colspan="4">Company Access</th>
+                    <th colspan="4">User Access</th>
+                </tr>
+                <tr>
+                    <!-- Global -->
+                    <th>C</th><th>R</th><th>U</th><th>D</th>
+                    <!-- Company -->
+                    <th>C</th><th>R</th><th>U</th><th>D</th>
+                    <!-- User -->
+                    <th>C</th><th>R</th><th>U</th><th>D</th>
+                </tr>
+            </thead>
+            <tbody id="permissionsBody">
+                <!-- Permissions grid will be populated by JS -->
+            </tbody>
+        </table>
+    </div>
+
+    <script>
+        const dataTables = ['Claims', 'Clients', 'Logs', 'Companies'];
+        const scopes = ['Global', 'Company', 'User'];
+        const crudOps = ['C', 'R', 'U', 'D'];
+
+        // In-memory store for permissions data (replace with API calls in a real app)
+        let permissionsData = {
+            'Admin': {
+                'Claims': { Global: { C: true, R: true, U: true, D: true }, Company: { C: true, R: true, U: true, D: true }, User: { C: true, R: true, U: true, D: true } },
+                'Clients': { Global: { C: true, R: true, U: true, D: true }, Company: { C: true, R: true, U: true, D: true }, User: { C: true, R: true, U: true, D: true } },
+                'Logs': { Global: { C: true, R: true, U: true, D: true }, Company: { C: true, R: true, U: true, D: true }, User: { C: true, R: true, U: true, D: true } },
+                'Companies': { Global: { C: true, R: true, U: true, D: true }, Company: { C: true, R: true, U: true, D: true }, User: { C: true, R: true, U: true, D: true } },
+            },
+            'Manager': {
+                'Claims': { Global: { C: false, R: false, U: false, D: false }, Company: { C: true, R: true, U: true, D: true }, User: { C: false, R: true, U: true, D: false } },
+                'Clients': { Global: { C: false, R: false, U: false, D: false }, Company: { C: true, R: true, U: true, D: false }, User: { C: false, R: true, U: false, D: false } },
+                'Logs': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: true, U: false, D: false }, User: { C: false, R: false, U: false, D: false } },
+                'Companies': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: true, U: false, D: false }, User: { C: false, R: false, U: false, D: false } }, // Managers likely can't CRUD companies globally or for other companies
+            },
+            'Editor': {
+                'Claims': { Global: { C: false, R: false, U: false, D: false }, Company: { C: true, R: true, U: true, D: false }, User: { C: true, R: true, U: true, D: false } }, // Can create/update their own claims within their company
+                'Clients': { Global: { C: false, R: false, U: false, D: false }, Company: { C: true, R: true, U: true, D: false }, User: { C: false, R: true, U: false, D: false } }, // Can edit company clients, read only for user scope? Example.
+                'Logs': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: false, U: false, D: false }, User: { C: false, R: false, U: false, D: false } }, // No log access
+                'Companies': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: false, U: false, D: false }, User: { C: false, R: false, U: false, D: false } }, // No company editing
+            },
+            'Reader': {
+                'Claims': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: true, U: false, D: false }, User: { C: false, R: true, U: false, D: false } }, // Read claims for their company and their own
+                'Clients': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: true, U: false, D: false }, User: { C: false, R: true, U: false, D: false } },
+                'Logs': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: false, U: false, D: false }, User: { C: false, R: false, U: false, D: false } },
+                'Companies': { Global: { C: false, R: false, U: false, D: false }, Company: { C: false, R: true, U: false, D: false }, User: { C: false, R: false, U: false, D: false } }, // Read info about their own company
+            }
+        };
+
+        const roleSelect = document.getElementById('roleSelect');
+        const addRoleBtn = document.getElementById('addRoleBtn');
+        const permissionsBody = document.getElementById('permissionsBody');
+
+        // --- Functions ---
+
+        function populateRoleSelect() {
+            const currentSelection = roleSelect.value;
+            roleSelect.innerHTML = ''; // Clear existing options
+            Object.keys(permissionsData).sort().forEach(roleName => {
+                const option = document.createElement('option');
+                option.value = roleName;
+                option.textContent = roleName;
+                roleSelect.appendChild(option);
+            });
+            // Try to restore previous selection or default to first role
+            roleSelect.value = permissionsData[currentSelection] ? currentSelection : Object.keys(permissionsData)[0];
+        }
+
+        function renderPermissionsGrid(roleName) {
+            permissionsBody.innerHTML = ''; // Clear existing grid
+            const rolePerms = permissionsData[roleName];
+            if (!rolePerms) return; // Safety check
+
+            dataTables.forEach(table => {
+                const row = permissionsBody.insertRow();
+                const cellTable = row.insertCell();
+                cellTable.textContent = table;
+
+                scopes.forEach(scope => {
+                    crudOps.forEach(op => {
+                        const cell = row.insertCell();
+                        const checkboxId = `perm-${roleName}-${table}-${scope}-${op}`;
+                        const checkbox = document.createElement('input');
+                        checkbox.type = 'checkbox';
+                        checkbox.id = checkboxId;
+                        checkbox.checked = rolePerms[table]?.[scope]?.[op] ?? false; // Use optional chaining and default to false if path doesn't exist
+
+                        // Add data attributes for easier updating
+                        checkbox.dataset.role = roleName;
+                        checkbox.dataset.table = table;
+                        checkbox.dataset.scope = scope;
+                        checkbox.dataset.op = op;
+
+                        checkbox.addEventListener('change', handlePermissionChange);
+
+                        // Removed label for space, using title instead
+                        // const label = document.createElement('label');
+                        // label.htmlFor = checkboxId;
+                        // label.textContent = op; // Show C, R, U, D next to checkbox
+                        // label.style.marginLeft = '3px';
+
+                        // Tooltip for clarity
+                        checkbox.title = `${scope} ${op}`;
+
+                        cell.appendChild(checkbox);
+                        // cell.appendChild(label);
+
+                        // Removed the wrapper span to put C/R/U/D in separate cells under scope headers
+                    });
+                });
+            });
+        }
+
+        function handlePermissionChange(event) {
+            const checkbox = event.target;
+            const { role, table, scope, op } = checkbox.dataset;
+            const isChecked = checkbox.checked;
+
+            // Update the in-memory data store
+            if (permissionsData[role] && permissionsData[role][table] && permissionsData[role][table][scope]) {
+                permissionsData[role][table][scope][op] = isChecked;
+                console.log(`Updated ${role} -> ${table} -> ${scope} -> ${op}: ${isChecked}`);
+                // In a real app, you would likely trigger an API call here to save the change.
+            } else {
+                console.error("Permission path not found in data structure:", role, table, scope, op);
+            }
+        }
+
+        function addNewRole() {
+            const newRoleName = prompt("Enter the name for the new role:");
+            if (newRoleName && newRoleName.trim() !== "") {
+                const trimmedName = newRoleName.trim();
+                if (permissionsData[trimmedName]) {
+                    alert(`Role "${trimmedName}" already exists.`);
+                    return;
+                }
+
+                // Add new role with default permissions (e.g., all false, or copy 'Reader')
+                permissionsData[trimmedName] = JSON.parse(JSON.stringify(permissionsData['Reader'])); // Deep copy Reader perms
+                // Or initialize with all false:
+                // permissionsData[trimmedName] = {};
+                // dataTables.forEach(table => {
+                //     permissionsData[trimmedName][table] = {};
+                //     scopes.forEach(scope => {
+                //         permissionsData[trimmedName][table][scope] = { C: false, R: false, U: false, D: false };
+                //     });
+                // });
+
+                console.log(`Added new role: ${trimmedName}`);
+                populateRoleSelect(); // Update dropdown
+                roleSelect.value = trimmedName; // Select the new role
+                renderPermissionsGrid(trimmedName); // Render its grid
+            } else if (newRoleName !== null) { // Check if user pressed OK with empty input
+                alert("Role name cannot be empty.");
+            }
+        }
+
+        // --- Initial Setup ---
+
+        roleSelect.addEventListener('change', (event) => {
+            renderPermissionsGrid(event.target.value);
+        });
+
+        addRoleBtn.addEventListener('click', addNewRole);
+
+        // Populate roles and render initial grid on page load
+        populateRoleSelect();
+        if (roleSelect.value) {
+            renderPermissionsGrid(roleSelect.value);
+        }
+
+    </script>
+
+</body>
+</html>
