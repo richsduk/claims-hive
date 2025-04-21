@@ -128,11 +128,101 @@
                 grid-template-columns: 1fr;
             }
         }
+
+        /* Toast notification */
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background-color: #fff;
+            border-radius: 4px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            z-index: 9999;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s, transform 0.3s;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .toast.success {
+            border-left: 4px solid #28a745;
+        }
+
+        .toast.error {
+            border-left: 4px solid #dc3545;
+        }
+
+        .toast.info {
+            border-left: 4px solid #17a2b8;
+        }
+
+        .toast-icon {
+            font-size: 18px;
+        }
+
+        .toast.success .toast-icon {
+            color: #28a745;
+        }
+
+        .toast.error .toast-icon {
+            color: #dc3545;
+        }
+
+        .toast.info .toast-icon {
+            color: #17a2b8;
+        }
+
+        .toast-content {
+            flex: 1;
+        }
+
+        .toast-title {
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .toast-message {
+            color: #6c757d;
+            font-size: 14px;
+        }
+
+        .toast-close {
+            background: none;
+            border: none;
+            color: #adb5bd;
+            cursor: pointer;
+            font-size: 16px;
+            padding: 0;
+        }
+
+        .toast-close:hover {
+            color: #6c757d;
+        }
     </style>
 </head>
 <body>
+    <!-- Toast notification container -->
+    <div id="toast" class="toast">
+        <div class="toast-icon">
+            <i class="fas fa-check-circle"></i>
+        </div>
+        <div class="toast-content">
+            <div class="toast-title">Success</div>
+            <div class="toast-message">Operation completed successfully.</div>
+        </div>
+        <button class="toast-close">&times;</button>
+    </div>
+
     <!-- Content will be placed inside the layout -->
-    <div id="home-content" style="display: none;">
+    <div id="home-content">
         <div class="component-cards">
             <div class="component-card">
                 <h2><i class="fa-solid fa-table"></i> DataTable Component</h2>
@@ -174,6 +264,23 @@
     
     <!-- Dynamic Content Area for SPA Navigation -->
     <div id="dynamic-content-area">
+        <!-- Admin Content Containers -->
+        <div id="companies-admin-content" class="admin-container" style="display: none;">
+            <div id="companies-data-table-container"></div>
+        </div>
+        
+        <div id="users-admin-content" class="admin-container" style="display: none;">
+            <div id="users-data-table-container"></div>
+        </div>
+        
+        <div id="roles-admin-content" class="admin-container" style="display: none;">
+            <div id="roles-data-table-container"></div>
+        </div>
+        
+        <div id="claim-types-admin-content" class="admin-container" style="display: none;">
+            <div id="claim-types-data-table-container"></div>
+        </div>
+        
         <!-- DataTable Demo Content -->
         <div id="datatable-demo-content" class="demo-container" style="display: none;">
             <div class="demo-controls">
@@ -419,11 +526,115 @@ Modal.prompt(
 
     <!-- Import as module -->
     <script type="module">
+        // Toast notification utility
+        const toast = {
+            element: document.getElementById('toast'),
+            iconElement: document.querySelector('#toast .toast-icon i'),
+            titleElement: document.querySelector('#toast .toast-title'),
+            messageElement: document.querySelector('#toast .toast-message'),
+            closeButton: document.querySelector('#toast .toast-close'),
+            timeout: null,
+            
+            show(type, title, message, duration = 3000) {
+                // Clear any existing timeout
+                if (this.timeout) {
+                    clearTimeout(this.timeout);
+                }
+                
+                // Set icon based on type
+                this.element.className = `toast ${type}`;
+                switch (type) {
+                    case 'success':
+                        this.iconElement.className = 'fas fa-check-circle';
+                        break;
+                    case 'error':
+                        this.iconElement.className = 'fas fa-exclamation-circle';
+                        break;
+                    case 'info':
+                        this.iconElement.className = 'fas fa-info-circle';
+                        break;
+                    default:
+                        this.iconElement.className = 'fas fa-bell';
+                }
+                
+                // Set content
+                this.titleElement.textContent = title;
+                this.messageElement.textContent = message;
+                
+                // Show toast
+                this.element.classList.add('show');
+                
+                // Auto-hide after duration
+                this.timeout = setTimeout(() => {
+                    this.hide();
+                }, duration);
+            },
+            
+            hide() {
+                this.element.classList.remove('show');
+            },
+            
+            init() {
+                // Add close button event listener
+                this.closeButton.addEventListener('click', () => this.hide());
+            }
+        };
+        
+        // Initialize toast
+        toast.init();
+
+        // Check if user is logged in
+        const token = localStorage.getItem('claims_hive_token');
+        const user = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+        
+        // If no token, redirect to login page
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+        
+        // Verify token with the server
+        fetch('/api/auth/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`,
+                'Accept': 'application/json',
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Token is invalid, clear it and redirect to login
+                localStorage.removeItem('claims_hive_token');
+                localStorage.removeItem('claims_hive_user');
+                window.location.href = 'login.html';
+                throw new Error('Invalid token');
+            }
+            return response.json();
+        })
+        .then(userData => {
+            console.log('User verified:', userData);
+            // Update user data in localStorage
+            localStorage.setItem('claims_hive_user', JSON.stringify(userData));
+            // Show welcome toast
+            toast.show('success', 'Welcome', `Hello, ${userData.name || userData.email}!`);
+
+            // Show initial content after verification
+            handleNavigation('menu-claims');
+        })
+        .catch(error => {
+            console.error('Error verifying token:', error);
+            toast.show('error', 'Authentication Error', 'Please log in again.');
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 2000);
+        });
+        
         import Layout from './components/layout.js';
         import Modal from './components/Modal/Modal.js';
         import DataTable from './components/DataTable/DataTable.js';
         import DataFormatter from './components/DataTable/dataFormatter.js';
         import Charts from './components/Charts/Charts.js';
+        import AdminTable from './admin-table.js';
 
         // Create our own Layout instance
         const layout = new Layout({
@@ -435,46 +646,22 @@ Modal.prompt(
         const contentArea = layout.contentArea;
         
         // Get references to the content containers
+        const homeContent = document.getElementById('home-content'); // Added reference
         const datatableDemoContent = document.getElementById('datatable-demo-content');
         const chartsDemoContent = document.getElementById('charts-demo-content');
         const modalDemoContent = document.getElementById('modal-demo-content');
 
-        // Add content header (initially for Home) - This should be done within handleNavigation or initial load
-        // layout.addContentHeader('Claims Hive Components', [
-        //     {
-        //         href: '#', // Changed from demo.html
-        //         'data-target-menu-id': 'menu-datatable-demo', // Added for SPA nav
-        //         icon: 'fa-solid fa-table',
-        //         text: 'View DataTable Demo'
-        //     },
-        //     {
-        //         href: '#', // Changed from demo.html
-        //         'data-target-menu-id': 'menu-charts-demo', // Added for SPA nav
-        //         icon: 'fa-solid fa-chart-pie',
-        //         text: 'View Charts Demo'
-        //     },
-        //     {
-        //         href: '#', // Changed from demo.html
-        //         'data-target-menu-id': 'menu-modal-demo', // Added for SPA nav
-        //         icon: 'fa-solid fa-window-maximize',
-        //         text: 'View Modal Demo'
-        //     }
-        // ]);
-
-        // Initial content (home) is handled later by simulating a click
-
         // Map menu item IDs to content elements and their initialization scripts
         const contentMap = {
             'menu-claims': {
-                content: document.getElementById('home-content'),
+                content: homeContent, // Use variable
                 init: () => {
                     // Re-initialize home content if needed (e.g., event listeners)
                     // Currently, home content is static HTML, so no re-init needed.
-                    // If it had dynamic elements, their setup would go here.
                     // Add listeners for the home page links if they haven't been added yet
                     setupHomeNavLinks();
                 },
-                 header: {
+                header: {
                     title: 'Claims Hive Components',
                     actions: [ // These actions should also trigger SPA navigation
                         {
@@ -493,6 +680,614 @@ Modal.prompt(
                             text: 'View Modal Demo'
                         }
                     ] // Note: layout.addContentHeader needs modification to handle targetMenuId
+                }
+            },
+            'menu-companies': {
+                content: document.getElementById('companies-admin-content'),
+                init: () => {
+                    // Initialize companies admin table
+                    
+                    // Define columns
+                    const columns = [
+                        {
+                            field: 'company_id',
+                            title: 'ID',
+                            type: 'number',
+                            sortable: true,
+                            editable: false
+                        },
+                        {
+                            field: 'name',
+                            title: 'Name',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'type',
+                            title: 'Type',
+                            type: 'select',
+                            sortable: true,
+                            options: [
+                                { value: 'admin', text: 'Admin' },
+                                { value: 'affiliate', text: 'Affiliate' },
+                                { value: 'buyer', text: 'Buyer' }
+                            ]
+                        },
+                        {
+                            field: 'created',
+                            title: 'Created',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        },
+                        {
+                            field: 'updated',
+                            title: 'Updated',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        }
+                    ];
+                    
+                    // Initialize admin table
+                    const adminTable = new AdminTable({
+                        tableName: 'company',
+                        title: 'Company',
+                        columns: columns,
+                        containerId: 'companies-data-table-container',
+                        apiEndpoint: '/api/company'
+                    });
+                },
+                header: {
+                    title: 'Companies',
+                    actions: [] // Removed navigation buttons as they're already in the sidebar
+                }
+            },
+            'menu-users': {
+                content: document.getElementById('users-admin-content'),
+                init: async () => {
+                    // Initialize users admin table
+                    
+                    // Fetch companies for dropdown
+                    async function fetchCompanies() {
+                        try {
+                            const response = await fetch('/api/company', {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to fetch companies: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            const companies = await response.json();
+                            return companies.map(company => ({
+                                value: company.company_id,
+                                text: company.name
+                            }));
+                        } catch (error) {
+                            console.error('Error fetching companies:', error);
+                            return [];
+                        }
+                    }
+                    
+                    // Define columns
+                    const columns = [
+                        {
+                            field: 'user_id',
+                            title: 'ID',
+                            type: 'number',
+                            sortable: true,
+                            editable: false
+                        },
+                        {
+                            field: 'email',
+                            title: 'Email',
+                            type: 'email',
+                            sortable: true
+                        },
+                        {
+                            field: 'first',
+                            title: 'First Name',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'last',
+                            title: 'Last Name',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'company_name',
+                            title: 'Company',
+                            type: 'text',
+                            sortable: true,
+                            editable: false
+                        },
+                        {
+                            field: 'company_id',
+                            title: 'Company',
+                            type: 'select',
+                            sortable: false,
+                            options: await fetchCompanies()
+                        },
+                        {
+                            field: 'role',
+                            title: 'Role',
+                            type: 'select',
+                            sortable: true,
+                            options: [
+                                { value: 'admin', text: 'Admin' },
+                                { value: 'affiliate_user', text: 'Affiliate User' },
+                                { value: 'buyer_user', text: 'Buyer User' }
+                            ]
+                        },
+                        {
+                            field: 'created',
+                            title: 'Created',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        },
+                        {
+                            field: 'updated',
+                            title: 'Updated',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        }
+                    ];
+                    
+                    // Initialize admin table
+                    const adminTable = new AdminTable({
+                        tableName: 'user',
+                        title: 'User',
+                        columns: columns,
+                        containerId: 'users-data-table-container',
+                        apiEndpoint: '/api/user'
+                    });
+                },
+                header: {
+                    title: 'Users',
+                    actions: [] // Removed navigation buttons as they're already in the sidebar
+                }
+            },
+            'menu-roles': {
+                content: document.getElementById('roles-admin-content'),
+                init: () => {
+                    // Initialize roles admin table
+                    
+                    // Define columns
+                    const columns = [
+                        {
+                            field: 'role_id',
+                            title: 'ID',
+                            type: 'number',
+                            sortable: true,
+                            editable: false
+                        },
+                        {
+                            field: 'name',
+                            title: 'Name',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'created',
+                            title: 'Created',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        },
+                        {
+                            field: 'updated',
+                            title: 'Updated',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        },
+                        {
+                            actions: [
+                                {
+                                    icon: 'fas fa-edit',
+                                    title: 'Edit',
+                                    class: 'edit',
+                                    onClick: (rowData) => showEditModal(rowData)
+                                },
+                                {
+                                    icon: 'fas fa-trash',
+                                    title: 'Delete',
+                                    class: 'delete',
+                                    onClick: (rowData) => confirmDelete(rowData)
+                                },
+                                {
+                                    icon: 'fas fa-key',
+                                    title: 'Permissions',
+                                    class: 'permissions',
+                                    onClick: (rowData) => showPermissionsModal(rowData)
+                                }
+                            ]
+                        }
+                    ];
+                    
+                    // Initialize admin table
+                    const adminTable = new AdminTable({
+                        tableName: 'role',
+                        title: 'Role',
+                        columns: columns,
+                        containerId: 'roles-data-table-container',
+                        apiEndpoint: '/api/role'
+                    });
+                    
+                    // Custom edit modal for roles
+                    function showEditModal(rowData = null) {
+                        const isEdit = rowData !== null;
+                        const title = isEdit ? `Edit Role` : `Add New Role`;
+                        
+                        // Create form content
+                        const formContent = document.createElement('div');
+                        formContent.className = 'admin-form';
+                        
+                        formContent.innerHTML = `
+                            <div class="form-group">
+                                <label for="name-${Date.now()}">Name:</label>
+                                <input type="text" id="name-${Date.now()}" name="name" value="${isEdit ? rowData.name : ''}" class="form-control" autocomplete="off">
+                            </div>
+                        `;
+                        
+                        // Create modal
+                        const modal = new Modal({
+                            title: title,
+                            content: formContent,
+                            size: 'medium',
+                            confirmText: 'Save',
+                            cancelText: 'Cancel',
+                            onConfirm: () => saveRole(isEdit, rowData)
+                        });
+                        
+                        modal.open();
+                    }
+                    
+                    // Save role
+                    async function saveRole(isEdit, originalData) {
+                        try {
+                            // Get form values
+                            const nameInput = document.querySelector('.admin-form [name="name"]');
+                            const name = nameInput ? nameInput.value : '';
+                            
+                            // Prepare data
+                            const data = { name };
+                            
+                            // Determine API endpoint and method
+                            let url = '/api/role';
+                            let method = 'POST';
+                            
+                            if (isEdit) {
+                                url = `${url}/${originalData.role_id}`;
+                                method = 'PUT';
+                            }
+                            
+                            // Send request
+                            const response = await fetch(url, {
+                                method: method,
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(data)
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to save role: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            // Refresh data
+                            adminTable.refreshData();
+                            
+                            return true;
+                        } catch (error) {
+                            console.error('Error saving role:', error);
+                            Modal.alert('Failed to save role. Please try again later.', 'Error');
+                            return false;
+                        }
+                    }
+                    
+                    // Confirm delete
+                    function confirmDelete(rowData) {
+                        Modal.confirm(
+                            `Are you sure you want to delete the role "${rowData.name}"?`,
+                            'Confirm Delete',
+                            () => deleteRole(rowData),
+                            () => {}
+                        );
+                    }
+                    
+                    // Delete role
+                    async function deleteRole(rowData) {
+                        try {
+                            const response = await fetch(`/api/role/${rowData.role_id}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to delete role: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            // Refresh data
+                            adminTable.refreshData();
+                            
+                            return true;
+                        } catch (error) {
+                            console.error('Error deleting role:', error);
+                            Modal.alert('Failed to delete role. Please try again later.', 'Error');
+                            return false;
+                        }
+                    }
+                    
+                    // Show permissions modal
+                    async function showPermissionsModal(rowData) {
+                        try {
+                            // Fetch role permissions
+                            const response = await fetch(`/api/role/${rowData.role_id}/permissions`, {
+                                method: 'GET',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to fetch permissions: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            const permissions = await response.json();
+                            
+                            // Create permissions matrix
+                            const permissionsContent = document.createElement('div');
+                            permissionsContent.className = 'permissions-content';
+                            
+                            // Define resources and scopes
+                            const resources = ['claims', 'clients', 'logs', 'companies'];
+                            const scopes = ['global', 'company', 'user'];
+                            const operations = ['create', 'read', 'update', 'delete'];
+                            
+                            // Create matrix HTML
+                            let matrixHtml = `
+                                <p>Set permissions for the "${rowData.name}" role:</p>
+                                <table class="permissions-matrix">
+                                    <thead>
+                                        <tr>
+                                            <th></th>
+                                            <th colspan="4" class="scope-header">Global</th>
+                                            <th colspan="4" class="scope-header">Company</th>
+                                            <th colspan="4" class="scope-header">User</th>
+                                        </tr>
+                                        <tr>
+                                            <th>Resource</th>
+                            `;
+                            
+                            // Add operation headers for each scope
+                            scopes.forEach(scope => {
+                                operations.forEach(operation => {
+                                    matrixHtml += `<th>${operation.charAt(0).toUpperCase()}</th>`;
+                                });
+                            });
+                            
+                            matrixHtml += `
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
+                            
+                            // Add rows for each resource
+                            resources.forEach(resource => {
+                                matrixHtml += `
+                                    <tr>
+                                        <td class="resource-name">${resource.charAt(0).toUpperCase() + resource.slice(1)}</td>
+                                `;
+                                
+                                // Add checkboxes for each scope and operation
+                                scopes.forEach(scope => {
+                                    operations.forEach(operation => {
+                                        // Find permission
+                                        const permission = permissions.find(p => 
+                                            p.resource === resource && 
+                                            p.scope === scope
+                                        );
+                                        
+                                        const checked = permission && permission[`can_${operation}`] ? 'checked' : '';
+                                        const checkboxId = `perm-${resource}-${scope}-${operation}-${Date.now()}`;
+                                        
+                                        matrixHtml += `
+                                            <td>
+                                                <input type="checkbox" 
+                                                       id="${checkboxId}"
+                                                       class="permission-checkbox" 
+                                                       data-resource="${resource}" 
+                                                       data-scope="${scope}" 
+                                                       data-operation="${operation}" 
+                                                       ${checked}
+                                                       autocomplete="off">
+                                            </td>
+                                        `;
+                                    });
+                                });
+                                
+                                matrixHtml += `</tr>`;
+                            });
+                            
+                            matrixHtml += `
+                                    </tbody>
+                                </table>
+                            `;
+                            
+                            permissionsContent.innerHTML = matrixHtml;
+                            
+                            // Create modal
+                            const modal = new Modal({
+                                title: `Permissions for ${rowData.name}`,
+                                content: permissionsContent,
+                                size: 'large',
+                                confirmText: 'Save',
+                                cancelText: 'Cancel',
+                                onConfirm: () => savePermissions(rowData)
+                            });
+                            
+                            modal.open();
+                        } catch (error) {
+                            console.error('Error fetching permissions:', error);
+                            Modal.alert('Failed to fetch permissions. Please try again later.', 'Error');
+                        }
+                    }
+                    
+                    // Save permissions
+                    async function savePermissions(rowData) {
+                        try {
+                            // Collect permissions from checkboxes
+                            const permissionsMap = {};
+                            
+                            document.querySelectorAll('.permission-checkbox').forEach(checkbox => {
+                                const resource = checkbox.dataset.resource;
+                                const scope = checkbox.dataset.scope;
+                                const operation = checkbox.dataset.operation;
+                                
+                                // Create key for resource and scope
+                                const key = `${resource}:${scope}`;
+                                
+                                if (!permissionsMap[key]) {
+                                    permissionsMap[key] = {
+                                        resource,
+                                        scope,
+                                        can_create: false,
+                                        can_read: false,
+                                        can_update: false,
+                                        can_delete: false
+                                    };
+                                }
+                                
+                                // Set operation value
+                                permissionsMap[key][`can_${operation}`] = checkbox.checked;
+                            });
+                            
+                            // Convert map to array
+                            const permissions = Object.values(permissionsMap);
+                            
+                            // Send request
+                            const response = await fetch(`/api/role/${rowData.role_id}/permissions`, {
+                                method: 'PUT',
+                                headers: {
+                                    'Authorization': `Bearer ${token}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify({ permissions })
+                            });
+                            
+                            if (!response.ok) {
+                                throw new Error(`Failed to save permissions: ${response.status} ${response.statusText}`);
+                            }
+                            
+                            // Show success message
+                            Modal.alert('Permissions saved successfully.', 'Success');
+                            
+                            return true;
+                        } catch (error) {
+                            console.error('Error saving permissions:', error);
+                            Modal.alert('Failed to save permissions. Please try again later.', 'Error');
+                            return false;
+                        }
+                    }
+                },
+                header: {
+                    title: 'Roles',
+                    actions: [] // Removed navigation buttons as they're already in the sidebar
+                }
+            },
+            'menu-claim-types': {
+                content: document.getElementById('claim-types-admin-content'),
+                init: () => {
+                    // Initialize claim types admin table
+                    
+                    // Define columns
+                    const columns = [
+                        {
+                            field: 'claim_type_id',
+                            title: 'ID',
+                            type: 'number',
+                            sortable: true,
+                            editable: false
+                        },
+                        {
+                            field: 'name',
+                            title: 'Name',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'description',
+                            title: 'Description',
+                            type: 'text',
+                            sortable: true
+                        },
+                        {
+                            field: 'created',
+                            title: 'Created',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        },
+                        {
+                            field: 'updated',
+                            title: 'Updated',
+                            type: 'date',
+                            sortable: true,
+                            editable: false,
+                            formatOptions: {
+                                format: 'medium'
+                            }
+                        }
+                    ];
+                    
+                    // Initialize admin table
+                    const adminTable = new AdminTable({
+                        tableName: 'claim-type',
+                        title: 'Claim Type',
+                        columns: columns,
+                        containerId: 'claim-types-data-table-container',
+                        apiEndpoint: '/api/claim-type'
+                    });
+                },
+                header: {
+                    title: 'Claim Types',
+                    actions: [] // Removed navigation buttons as they're already in the sidebar
                 }
             },
             'menu-datatable-demo': {
@@ -581,564 +1376,279 @@ Modal.prompt(
                             type: 'status',
                             sortable: true
                         },
-                        {
-                            field: 'affiliate',
-                            title: 'Affiliate',
-                            type: 'text',
-                            sortable: true
-                        },
-                        {
-                            field: 'buyer',
-                            title: 'Buyer',
-                            type: 'text',
-                            sortable: true
-                        },
-                        {
-                            field: 'amount',
-                            title: 'Amount',
-                            type: 'currency',
-                            sortable: true,
-                            formatOptions: {
-                                style: 'currency',
-                                currency: 'USD'
-                            }
-                        },
-                        {
-                            field: 'dateAdded',
-                            title: 'Date Added',
-                            type: 'date',
-                            sortable: true,
-                            formatOptions: {
-                                format: 'medium'
-                            }
-                        },
-                        {
-                            actions: [
-                                {
-                                    icon: 'fas fa-edit',
-                                    title: 'Edit',
-                                    class: 'edit',
-                                    onClick: (rowData) => {
-                                        console.log('Edit clicked for:', rowData);
-                                        showRowDetails(rowData);
-                                    }
-                                },
-                                {
-                                    icon: 'fas fa-trash',
-                                    title: 'Delete',
-                                    class: 'delete',
-                                    onClick: (rowData) => {
-                                        console.log('Delete clicked for:', rowData);
-                                        if (confirm(`Are you sure you want to delete "${rowData.name}"?`)) {
-                                            dataTable.removeRow(rowData.id);
-                                        }
-                                    }
-                                }
-                            ]
-                        }
+                        // Add more columns as needed
                     ];
 
                     const dataTable = new DataTable('#data-table-container', {
                         columns: columns,
                         data: sampleData,
-                        pageSize: 5,
-                        sortColumn: 'dateAdded',
-                        sortDirection: 'desc',
-                        cardTitleField: 'name',
-                        onRowClick: showRowDetails,
+                        responsive: true,
+                        cardViewBreakpoint: 768,
+                        pagination: true,
+                        rowsPerPage: 5,
+                        searchable: true,
+                        sortable: true,
+                        loadingIndicator: true,
                         websocket: {
-                            enabled: false // Set to true when implementing actual WebSocket
+                            enabled: false // Disable WebSocket for demo
+                        },
+                        
+                        // Custom formatters
+                        formatters: {
+                            status: DataFormatter.statusFormatter,
+                            date: DataFormatter.dateFormatter,
+                            currency: DataFormatter.currencyFormatter,
+                            actions: (value, row) => {
+                                return `
+                                    <button class="btn-icon btn-view" data-id="${row.id}" title="View Details"><i class="fas fa-eye"></i></button>
+                                    <button class="btn-icon btn-edit" data-id="${row.id}" title="Edit"><i class="fas fa-edit"></i></button>
+                                    <button class="btn-icon btn-delete" data-id="${row.id}" title="Delete"><i class="fas fa-trash"></i></button>
+                                `;
+                            }
+                        },
+                        
+                        // Event handlers
+                        onRowClick: (row, event) => {
+                            console.log('Row clicked:', row);
+                            
+                            // Handle action button clicks
+                            if (event.target.closest('.btn-view')) {
+                                showRowDetails(row);
+                            } else if (event.target.closest('.btn-edit')) {
+                                editRow(row);
+                            } else if (event.target.closest('.btn-delete')) {
+                                deleteRow(row.id);
+                            }
+                        },
+                        
+                        onSort: (field, direction) => {
+                            console.log(`Sorted by ${field} ${direction}`);
+                        },
+                        
+                        onPageChange: (page) => {
+                            console.log(`Changed to page ${page}`);
+                        },
+                        
+                        onSearch: (query) => {
+                            console.log(`Searched for: ${query}`);
                         }
                     });
 
-                    // Modal functionality
-                    const modal = document.getElementById('row-details-modal');
-                    const modalBody = modal.querySelector('.modal-body');
-                    const closeButtons = modal.querySelectorAll('.modal-close-btn');
-                    const saveChangesBtn = document.getElementById('save-changes-btn');
-
-                    let currentRowData = null;
-
-                    function showRowDetails(rowData) {
-                        currentRowData = rowData;
-
-                        // Populate modal body
-                        modalBody.innerHTML = `
-                            <div class="form-row">
-                                <label for="edit-name">Claim Name:</label>
-                                <input type="text" id="edit-name" value="${rowData.name}" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <label for="edit-type">Claim Type:</label>
-                                <input type="text" id="edit-type" value="${rowData.type}" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <label for="edit-status">Status:</label>
-                                <select id="edit-status" class="form-control">
-                                    <option value="new" ${rowData.status === 'new' ? 'selected' : ''}>New</option>
-                                    <option value="assigned" ${rowData.status === 'assigned' ? 'selected' : ''}>Assigned</option>
-                                    <option value="accepted" ${rowData.status === 'accepted' ? 'selected' : ''}>Accepted</option>
-                                    <option value="rejected" ${rowData.status === 'rejected' ? 'selected' : ''}>Rejected</option>
-                                    <option value="settled" ${rowData.status === 'settled' ? 'selected' : ''}>Settled</option>
-                                </select>
-                            </div>
-                            <div class="form-row">
-                                <label for="edit-affiliate">Affiliate:</label>
-                                <input type="text" id="edit-affiliate" value="${rowData.affiliate}" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <label for="edit-buyer">Buyer:</label>
-                                <input type="text" id="edit-buyer" value="${rowData.buyer}" class="form-control">
-                            </div>
-                            <div class="form-row">
-                                <label for="edit-amount">Amount:</label>
-                                <input type="number" id="edit-amount" value="${rowData.amount}" step="0.01" class="form-control">
-                            </div>
-                        `;
-
-                        // Show modal
-                        modal.style.display = 'flex';
-                    }
-
-                    function closeModal() {
-                        modal.style.display = 'none';
-                        currentRowData = null;
-                    }
-
-                    function saveChanges() {
-                        if (!currentRowData) return;
-
-                        const updatedData = {
-                            name: document.getElementById('edit-name').value,
-                            type: document.getElementById('edit-type').value,
-                            status: document.getElementById('edit-status').value,
-                            affiliate: document.getElementById('edit-affiliate').value,
-                            buyer: document.getElementById('edit-buyer').value,
-                            amount: parseFloat(document.getElementById('edit-amount').value)
-                        };
-
-                        dataTable.updateRow(currentRowData.id, updatedData);
-                        closeModal();
-                    }
-
-                    // Add event listeners
-                    closeButtons.forEach(button => {
-                        button.addEventListener('click', closeModal);
-                    });
-
-                    saveChangesBtn.addEventListener('click', saveChanges);
-
-                    // Close modal when clicking outside
-                    modal.addEventListener('click', (event) => {
-                        if (event.target === modal) {
-                            closeModal();
-                        }
-                    });
-
-                    // Demo control buttons
+                    // Demo controls
                     document.getElementById('add-row-btn').addEventListener('click', () => {
-                        const newId = Math.max(...dataTable.options.data.map(item => item.id)) + 1;
+                        const newId = Math.max(0, ...sampleData.map(r => r.id)) + 1;
                         const newRow = {
                             id: newId,
-                            name: `New Claim #${newId}`,
+                            name: `New Claim ${newId}`,
                             type: ['Motor', 'Home', 'Gadget', 'Travel'][Math.floor(Math.random() * 4)],
-                            status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
+                            status: 'new',
                             affiliate: 'New Affiliate',
                             buyer: 'New Buyer',
-                            amount: Math.round(Math.random() * 5000 * 100) / 100,
+                            amount: Math.random() * 5000,
                             dateAdded: new Date().toISOString()
                         };
-
                         dataTable.addRow(newRow);
+                        sampleData.push(newRow); // Keep local sample data in sync for demo
+                        toast.show('info', 'Row Added', `Added row with ID ${newId}`);
                     });
 
                     document.getElementById('update-row-btn').addEventListener('click', () => {
-                        const data = dataTable.options.data;
-                        if (data.length === 0) return;
-
-                        const randomIndex = Math.floor(Math.random() * data.length);
-                        const randomRow = data[randomIndex];
-
-                        const updatedData = {
-                            status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
-                            amount: Math.round(Math.random() * 5000 * 100) / 100
-                        };
-
-                        dataTable.updateRow(randomRow.id, updatedData);
+                        if (sampleData.length === 0) return;
+                        const randomIndex = Math.floor(Math.random() * sampleData.length);
+                        const rowToUpdate = sampleData[randomIndex];
+                        const updatedRow = { ...rowToUpdate, amount: Math.random() * 10000, status: ['assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 4)] };
+                        dataTable.updateRow(updatedRow.id, updatedRow);
+                        sampleData[randomIndex] = updatedRow; // Keep local sample data in sync
+                        toast.show('info', 'Row Updated', `Updated row with ID ${updatedRow.id}`);
                     });
 
                     document.getElementById('delete-row-btn').addEventListener('click', () => {
-                        const data = dataTable.options.data;
-                        if (data.length === 0) return;
-
-                        const randomIndex = Math.floor(Math.random() * data.length);
-                        const randomRow = data[randomIndex];
-
-                        if (confirm(`Are you sure you want to delete "${randomRow.name}"?`)) {
-                            dataTable.removeRow(randomRow.id);
-                        }
+                        if (sampleData.length === 0) return;
+                        const randomIndex = Math.floor(Math.random() * sampleData.length);
+                        const rowToDelete = sampleData[randomIndex];
+                        dataTable.deleteRow(rowToDelete.id);
+                        sampleData.splice(randomIndex, 1); // Keep local sample data in sync
+                        toast.show('info', 'Row Deleted', `Deleted row with ID ${rowToDelete.id}`);
                     });
-
+                    
                     document.getElementById('toggle-loading-btn').addEventListener('click', () => {
-                        dataTable.options.loading = !dataTable.options.loading;
-                        dataTable.render();
+                         dataTable.toggleLoading();
+                         toast.show('info', 'Loading Toggled', `Loading state is now ${dataTable.isLoading ? 'ON' : 'OFF'}`);
                     });
 
-                    // Simulated WebSocket updates (for demo purposes)
-                    let wsSimulation;
+                    // Modal functions
+                    const modalElement = document.getElementById('row-details-modal');
+                    const modalBody = modalElement.querySelector('.modal-body');
+                    const modal = new Modal(modalElement); // Use existing element
 
-                    function startWebSocketSimulation() {
-                        // Clear any existing interval
-                        if (wsSimulation) clearInterval(wsSimulation);
-
-                        // Simulate WebSocket updates every 10 seconds
-                        wsSimulation = setInterval(() => {
-                            const data = dataTable.options.data;
-                            if (data.length === 0) return;
-
-                            // Randomly choose between adding, updating, or removing a row
-                            const action = Math.floor(Math.random() * 3);
-
-                            switch (action) {
-                                case 0: // Add
-                                    const newId = Math.max(...data.map(item => item.id)) + 1;
-                                    const newRow = {
-                                        id: newId,
-                                        name: `WebSocket Claim #${newId}`,
-                                        type: ['Motor', 'Home', 'Gadget', 'Travel'][Math.floor(Math.random() * 4)],
-                                        status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
-                                        affiliate: 'WebSocket Affiliate',
-                                        buyer: 'WebSocket Buyer',
-                                        amount: Math.round(Math.random() * 5000 * 100) / 100,
-                                        dateAdded: new Date().toISOString()
-                                    };
-
-                                    console.log('WebSocket simulation: Adding row', newRow);
-                                    dataTable.addRow(newRow);
-                                    break;
-
-                                case 1: // Update
-                                    const randomUpdateIndex = Math.floor(Math.random() * data.length);
-                                    const randomUpdateRow = data[randomUpdateIndex];
-
-                                    const updatedData = {
-                                        status: ['new', 'assigned', 'accepted', 'rejected', 'settled'][Math.floor(Math.random() * 5)],
-                                        amount: Math.round(Math.random() * 5000 * 100) / 100
-                                    };
-
-                                    console.log('WebSocket simulation: Updating row', randomUpdateRow.id, updatedData);
-                                    dataTable.updateRow(randomUpdateRow.id, updatedData);
-                                    break;
-
-                                case 2: // Remove
-                                    if (data.length <= 3) {
-                                        // Don't remove if we're down to just a few rows
-                                        return;
-                                    }
-
-                                    const randomRemoveIndex = Math.floor(Math.random() * data.length);
-                                    const randomRemoveRow = data[randomRemoveIndex];
-
-                                    console.log('WebSocket simulation: Removing row', randomRemoveRow.id);
-                                    dataTable.removeRow(randomRemoveRow.id);
-                                    break;
-                            }
-                        }, 10000); // Every 10 seconds
+                    function showRowDetails(row) {
+                        modalBody.innerHTML = `
+                            <p><strong>ID:</strong> ${row.id}</p>
+                            <p><strong>Name:</strong> ${row.name}</p>
+                            <p><strong>Type:</strong> ${row.type}</p>
+                            <p><strong>Status:</strong> ${DataFormatter.statusFormatter(row.status)}</p>
+                            <p><strong>Affiliate:</strong> ${row.affiliate}</p>
+                            <p><strong>Buyer:</strong> ${row.buyer}</p>
+                            <p><strong>Amount:</strong> ${DataFormatter.currencyFormatter(row.amount)}</p>
+                            <p><strong>Date Added:</strong> ${DataFormatter.dateFormatter(row.dateAdded)}</p>
+                        `;
+                        modal.open();
                     }
 
-                    // Start the WebSocket simulation
-                    startWebSocketSimulation();
-                },
-                 header: {
-                    title: 'DataTable Component Demo',
-                    actions: [
-                        {
-                            targetMenuId: 'menu-claims', // Target the home/claims menu item
-                            icon: 'fas fa-home',
-                            text: 'Back to Home'
-                        }
-                    ] // Note: layout.addContentHeader needs modification to handle targetMenuId
+                    function editRow(row) {
+                        // Implement edit functionality, maybe open a form in the modal
+                        toast.show('info', 'Edit Clicked', `Edit button clicked for row ID ${row.id}`);
+                        // For demo, just show details
+                        showRowDetails(row); 
+                    }
+
+                    function deleteRow(id) {
+                        Modal.confirm(
+                            `Are you sure you want to delete row ID ${id}?`,
+                            'Confirm Deletion',
+                            () => {
+                                dataTable.deleteRow(id);
+                                const index = sampleData.findIndex(r => r.id === id);
+                                if (index > -1) sampleData.splice(index, 1);
+                                toast.show('success', 'Row Deleted', `Successfully deleted row ID ${id}`);
+                            },
+                            () => {
+                                toast.show('info', 'Deletion Cancelled', `Deletion cancelled for row ID ${id}`);
+                            }
+                        );
+                    }
                 }
             },
             'menu-charts-demo': {
                 content: chartsDemoContent,
                 init: () => {
                     // Charts demo initialization script
-                    const claimTypes = ['Motor', 'Home', 'Gadget', 'Travel', 'Pet', 'Business'];
-                    const claimStatuses = ['New', 'Assigned', 'Accepted', 'Rejected', 'Settled'];
-                    const affiliates = ['Affiliate Partners Inc.', 'Regional Affiliates', 'Tech Affiliates', 'Travel Agents United', 'Insurance Brokers Ltd'];
-                    const buyers = ['Major Buyer Co.', 'Insurance Giant Ltd', 'Gadget Protect', 'Air Insure', 'Home Coverage Inc.'];
+                    const chartManager = new Charts();
 
-                    // Generate random data
-                    function generateRandomData(labels, count = 1) {
-                        return labels.map(label => ({
-                            label,
-                            value: Math.floor(Math.random() * 1000)
-                        }));
-                    }
+                    // Sample Data
+                    const initialData = {
+                        labels: ['Motor', 'Home', 'Gadget', 'Travel'],
+                        datasets: [{
+                            label: 'Claims Count',
+                            data: [120, 85, 45, 60],
+                            backgroundColor: ['#007bff', '#28a745', '#ffc107', '#17a2b8']
+                        }]
+                    };
+                    
+                    const statusData = {
+                        labels: ['New', 'Assigned', 'Accepted', 'Rejected', 'Settled'],
+                        datasets: [{
+                            label: 'Claims by Status',
+                            data: [50, 75, 120, 30, 90],
+                            backgroundColor: ['#6c757d', '#17a2b8', '#28a745', '#dc3545', '#007bff']
+                        }]
+                    };
 
-                    // Generate time series data
-                    function generateTimeSeriesData(days = 30, datasets = 1) {
-                        const labels = [];
-                        const now = new Date();
-
-                        for (let i = days - 1; i >= 0; i--) {
-                            const date = new Date(now);
-                            date.setDate(now.getDate() - i);
-                            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
-                        }
-
-                        const data = {
-                            labels,
-                            datasets: []
-                        };
-
-                        const datasetLabels = ['New Claims', 'Settled Claims', 'Rejected Claims', 'Total Active Claims'];
-
-                        for (let i = 0; i < datasets; i++) {
-                            if (i >= datasetLabels.length) break;
-
-                            const values = [];
-                            let lastValue = Math.floor(Math.random() * 50) + 10;
-
-                            for (let j = 0; j < days; j++) {
-                                // Generate a value that's somewhat related to the previous value
-                                const change = Math.floor(Math.random() * 20) - 10; // -10 to +10
-                                lastValue = Math.max(0, lastValue + change);
-                                values.push(lastValue);
+                    const timeData = {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
+                        datasets: [
+                            {
+                                label: 'Motor Claims',
+                                data: [30, 45, 50, 40, 60, 70],
+                                borderColor: '#007bff',
+                                tension: 0.1
+                            },
+                            {
+                                label: 'Home Claims',
+                                data: [20, 30, 25, 35, 45, 55],
+                                borderColor: '#28a745',
+                                tension: 0.1
                             }
+                        ]
+                    };
+                    
+                    const affiliateData = {
+                         labels: ['Affiliate A', 'Affiliate B', 'Affiliate C', 'Affiliate D'],
+                         datasets: [{
+                             label: 'Claims by Affiliate',
+                             data: [150, 100, 80, 120],
+                             backgroundColor: ['#ffc107', '#17a2b8', '#6f42c1', '#fd7e14']
+                         }]
+                    };
+                    
+                     const buyerData = {
+                         labels: ['Buyer X', 'Buyer Y', 'Buyer Z'],
+                         datasets: [{
+                             label: 'Claims by Buyer',
+                             data: [200, 150, 180],
+                             backgroundColor: ['#dc3545', '#0d6efd', '#20c997']
+                         }]
+                    };
 
-                            data.datasets.push({
-                                label: datasetLabels[i],
-                                data: values
-                            });
-                        }
+                    // Create Charts
+                    let claimsByTypeChart = chartManager.createChart('#claims-by-type-chart', 'bar', initialData);
+                    let claimsByStatusChart = chartManager.createChart('#claims-by-status-chart', 'doughnut', statusData);
+                    let claimsOverTimeChart = chartManager.createChart('#claims-over-time-chart', 'line', timeData);
+                    let claimsByAffiliateChart = chartManager.createChart('#claims-by-affiliate-chart', 'pie', affiliateData);
+                    let claimsByBuyerChart = chartManager.createChart('#claims-by-buyer-chart', 'polarArea', buyerData);
 
-                        return data;
-                    }
-
-                    // Format data for different chart types
-                    function formatDataForChartType(data, type) {
-                        if (['pie', 'doughnut', 'polarArea'].includes(type)) {
-                            return {
-                                labels: data.map(item => item.label),
-                                datasets: [{
-                                    data: data.map(item => item.value)
-                                }]
-                            };
-                        } else if (type === 'radar') {
-                            return {
-                                labels: data.map(item => item.label),
-                                datasets: [{
-                                    label: 'Claims',
-                                    data: data.map(item => item.value)
-                                }]
-                            };
-                        } else {
-                            return {
-                                labels: data.map(item => item.label),
-                                datasets: [{
-                                    label: 'Claims',
-                                    data: data.map(item => item.value)
-                                }]
-                            };
-                        }
-                    }
-
-                    // Initialize charts
-                    let currentChartType = 'bar';
-                    let charts = {};
-
-                    // Claims by Type Chart
-                    const claimsByTypeData = generateRandomData(claimTypes);
-                    charts.claimsByType = new Charts('#claims-by-type-chart', {
-                        type: currentChartType,
-                        data: formatDataForChartType(claimsByTypeData, currentChartType),
-                        onClick: (data) => {
-                            console.log('Claims by Type clicked:', data);
-                            alert(`${data.label}: ${data.value} claims`);
-                        }
-                    });
-
-                    // Claims by Status Chart
-                    const claimsByStatusData = generateRandomData(claimStatuses);
-                    charts.claimsByStatus = new Charts('#claims-by-status-chart', {
-                        type: currentChartType,
-                        data: formatDataForChartType(claimsByStatusData, currentChartType),
-                        onClick: (data) => {
-                            console.log('Claims by Status clicked:', data);
-                            alert(`${data.label}: ${data.value} claims`);
-                        }
-                    });
-
-                    // Claims Over Time Chart
-                    const claimsOverTimeData = generateTimeSeriesData(30, 3);
-                    charts.claimsOverTime = new Charts('#claims-over-time-chart', {
-                        type: 'line',
-                        data: claimsOverTimeData,
-                        options: {
-                            scales: {
-                                y: {
-                                    beginAtZero: true
-                                }
-                            }
-                        }
-                    });
-
-                    // Claims by Affiliate Chart
-                    const claimsByAffiliateData = generateRandomData(affiliates);
-                    charts.claimsByAffiliate = new Charts('#claims-by-affiliate-chart', {
-                        type: currentChartType,
-                        data: formatDataForChartType(claimsByAffiliateData, currentChartType),
-                        onClick: (data) => {
-                            console.log('Claims by Affiliate clicked:', data);
-                            alert(`${data.label}: ${data.value} claims`);
-                        }
-                    });
-
-                    // Claims by Buyer Chart
-                    const claimsByBuyerData = generateRandomData(buyers);
-                    charts.claimsByBuyer = new Charts('#claims-by-buyer-chart', {
-                        type: currentChartType,
-                        data: formatDataForChartType(claimsByBuyerData, currentChartType),
-                        onClick: (data) => {
-                            console.log('Claims by Buyer clicked:', data);
-                            alert(`${data.label}: ${data.value} claims`);
-                        }
-                    });
-
-                    // Chart type buttons
-                    document.querySelectorAll('.chart-type-btn').forEach(button => {
-                        button.addEventListener('click', () => {
-                            // Update active button
-                            document.querySelectorAll('.chart-type-btn').forEach(btn => {
-                                btn.classList.remove('active');
-                            });
-                            button.classList.add('active');
-
-                            // Get chart type
-                            const type = button.dataset.type;
-                            currentChartType = type;
-
-                            // Update charts
-                            updateChartTypes(type);
-                        });
-                    });
-
-                    // Update chart types
-                    function updateChartTypes(type) {
-                        // Skip the time series chart
-                        const chartsToUpdate = ['claimsByType', 'claimsByStatus', 'claimsByAffiliate', 'claimsByBuyer'];
-
-                        chartsToUpdate.forEach(chartKey => {
-                            const chart = charts[chartKey];
-
-                            // Destroy the old chart
-                            chart.destroy();
-
-                            // Get the container
-                            const container = chart.container;
-
-                            // Get the data
-                            let data;
-                            switch (chartKey) {
-                                case 'claimsByType':
-                                    data = generateRandomData(claimTypes);
-                                    break;
-                                case 'claimsByStatus':
-                                    data = generateRandomData(claimStatuses);
-                                    break;
-                                case 'claimsByAffiliate':
-                                    data = generateRandomData(affiliates);
-                                    break;
-                                case 'claimsByBuyer':
-                                    data = generateRandomData(buyers);
-                                    break;
-                            }
-
-                            // Create a new chart
-                            charts[chartKey] = new Charts(`#${container.id}`, {
-                                type: type,
-                                data: formatDataForChartType(data, type),
-                                onClick: (data) => {
-                                    console.log(`${chartKey} clicked:`, data);
-                                    alert(`${data.label}: ${data.value} claims`);
-                                }
-                            });
-                        });
-                    }
-
-                    // Demo control buttons
+                    // Demo Controls
                     document.getElementById('update-data-btn').addEventListener('click', () => {
-                        // Update all charts with new random data
-                        const claimsByTypeData = generateRandomData(claimTypes);
-                        charts.claimsByType.updateChart(formatDataForChartType(claimsByTypeData, currentChartType));
-
-                        const claimsByStatusData = generateRandomData(claimStatuses);
-                        charts.claimsByStatus.updateChart(formatDataForChartType(claimsByStatusData, currentChartType));
-
-                        const claimsOverTimeData = generateTimeSeriesData(30, 3);
-                        charts.claimsOverTime.updateChart(claimsOverTimeData);
-
-                        const claimsByAffiliateData = generateRandomData(affiliates);
-                        charts.claimsByAffiliate.updateChart(formatDataForChartType(claimsByAffiliateData, currentChartType));
-
-                        const claimsByBuyerData = generateRandomData(buyers);
-                        charts.claimsByBuyer.updateChart(formatDataForChartType(claimsByBuyerData, currentChartType));
+                        chartManager.updateChartData(claimsByTypeChart, {
+                            labels: initialData.labels,
+                            datasets: [{ ...initialData.datasets[0], data: initialData.datasets[0].data.map(() => Math.floor(Math.random() * 150)) }]
+                        });
+                         chartManager.updateChartData(claimsByStatusChart, {
+                            labels: statusData.labels,
+                            datasets: [{ ...statusData.datasets[0], data: statusData.datasets[0].data.map(() => Math.floor(Math.random() * 150)) }]
+                        });
+                        toast.show('info', 'Chart Data Updated', 'Random data applied.');
                     });
 
                     document.getElementById('add-dataset-btn').addEventListener('click', () => {
-                        // Add a dataset to the time series chart
-                        const days = 30;
-                        const values = [];
-                        let lastValue = Math.floor(Math.random() * 50) + 10;
-
-                        for (let j = 0; j < days; j++) {
-                            const change = Math.floor(Math.random() * 20) - 10;
-                            lastValue = Math.max(0, lastValue + change);
-                            values.push(lastValue);
-                        }
-
                         const newDataset = {
-                            label: `Dataset ${charts.claimsOverTime.chart.data.datasets.length + 1}`,
-                            data: values
+                            label: `Gadget Claims ${timeData.datasets.length}`,
+                            data: timeData.labels.map(() => Math.floor(Math.random() * 50)),
+                            borderColor: `#${Math.floor(Math.random()*16777215).toString(16)}`,
+                            tension: 0.1
                         };
-
-                        charts.claimsOverTime.addDataset(newDataset);
+                        timeData.datasets.push(newDataset); // Keep local data in sync
+                        chartManager.addDataset(claimsOverTimeChart, newDataset);
+                        toast.show('info', 'Dataset Added', 'New dataset added to Line Chart.');
                     });
 
                     document.getElementById('remove-dataset-btn').addEventListener('click', () => {
-                        // Remove the last dataset from the time series chart
-                        if (charts.claimsOverTime.chart.data.datasets.length > 1) {
-                            charts.claimsOverTime.removeDataset(charts.claimsOverTime.chart.data.datasets.length - 1);
+                        if (timeData.datasets.length > 1) {
+                             timeData.datasets.pop(); // Keep local data in sync
+                             chartManager.removeDataset(claimsOverTimeChart);
+                             toast.show('info', 'Dataset Removed', 'Last dataset removed from Line Chart.');
                         } else {
-                            alert('Cannot remove the last dataset');
+                             toast.show('error', 'Cannot Remove', 'Cannot remove the last dataset.');
                         }
                     });
-
-                    document.getElementById('toggle-loading-btn').addEventListener('click', () => {
-                        // Toggle loading state for all charts
-                        Object.values(charts).forEach(chart => {
-                            chart.container.classList.toggle('loading');
+                    
+                    // Chart Type Buttons
+                    document.querySelectorAll('.chart-type-btn').forEach(button => {
+                        button.addEventListener('click', (e) => {
+                            const type = e.currentTarget.dataset.type;
+                            
+                            // Update active button style
+                            document.querySelectorAll('.chart-type-btn').forEach(btn => btn.classList.remove('active'));
+                            e.currentTarget.classList.add('active');
+                            
+                            // Recreate charts with the new type
+                            claimsByTypeChart = chartManager.changeChartType('#claims-by-type-chart', type, initialData);
+                            claimsByStatusChart = chartManager.changeChartType('#claims-by-status-chart', type === 'line' || type === 'bar' || type === 'radar' ? 'pie' : type, statusData); // Keep some as circular
+                            claimsOverTimeChart = chartManager.changeChartType('#claims-over-time-chart', type === 'pie' || type === 'doughnut' || type === 'polarArea' ? 'line' : type, timeData); // Keep some as linear
+                            claimsByAffiliateChart = chartManager.changeChartType('#claims-by-affiliate-chart', type === 'line' || type === 'bar' || type === 'radar' ? 'pie' : type, affiliateData);
+                            claimsByBuyerChart = chartManager.changeChartType('#claims-by-buyer-chart', type === 'line' || type === 'bar' || type === 'radar' ? 'polarArea' : type, buyerData);
+                            
+                            toast.show('info', 'Chart Type Changed', `Changed charts to ${type}`);
                         });
                     });
-                },
-                 header: {
-                    title: 'Charts Component Demo',
-                    actions: [
-                        {
-                            targetMenuId: 'menu-claims', // Target the home/claims menu item
-                            icon: 'fas fa-home',
-                            text: 'Back to Home'
-                        }
-                    ] // Note: layout.addContentHeader needs modification to handle targetMenuId
                 }
             },
             'menu-modal-demo': {
                 content: modalDemoContent,
                 init: () => {
                     // Modal demo initialization script
-                    // Basic Modal
+                    
+                    // Basic Modals
                     document.getElementById('basic-modal-btn').addEventListener('click', () => {
                         const basicModal = new Modal({
                             title: 'Basic Modal',
@@ -1147,487 +1657,215 @@ Modal.prompt(
                         basicModal.open();
                     });
 
-                    // Alert Modal
                     document.getElementById('alert-modal-btn').addEventListener('click', () => {
-                        Modal.alert('This is an alert message!', 'Alert', () => {
-                            console.log('Alert closed');
-                        });
+                        Modal.alert('This is an alert message!', 'Alert');
                     });
 
-                    // Confirm Modal
                     document.getElementById('confirm-modal-btn').addEventListener('click', () => {
                         Modal.confirm(
                             'Are you sure you want to proceed?',
                             'Confirm Action',
-                            () => console.log('Confirmed!'),
-                            () => console.log('Cancelled!')
+                            () => toast.show('success', 'Confirmed', 'You clicked OK!'),
+                            () => toast.show('info', 'Cancelled', 'You clicked Cancel!')
                         );
                     });
 
-                    // Prompt Modal
                     document.getElementById('prompt-modal-btn').addEventListener('click', () => {
                         Modal.prompt(
                             'Please enter your name:',
-                            '',
+                            'Default Name', // Optional default value
                             'User Input',
-                            (value) => console.log('Input value:', value),
-                            () => console.log('Prompt cancelled')
+                            (value) => toast.show('success', 'Input Received', `You entered: ${value || '(empty)'}`),
+                            () => toast.show('info', 'Cancelled', 'Prompt was cancelled.')
                         );
                     });
+                    
+                    // Sizes
+                    document.getElementById('small-modal-btn').addEventListener('click', () => new Modal({ title: 'Small Modal', content: 'Size: small', size: 'small' }).open());
+                    document.getElementById('medium-modal-btn').addEventListener('click', () => new Modal({ title: 'Medium Modal', content: 'Size: medium (default)', size: 'medium' }).open());
+                    document.getElementById('large-modal-btn').addEventListener('click', () => new Modal({ title: 'Large Modal', content: 'Size: large', size: 'large' }).open());
+                    document.getElementById('fullscreen-modal-btn').addEventListener('click', () => new Modal({ title: 'Fullscreen Modal', content: 'Size: fullscreen', size: 'fullscreen' }).open());
 
-                    // Modal Sizes
-                    document.getElementById('small-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Small Modal',
-                            content: 'This is a small modal dialog.',
-                            size: 'small'
-                        });
-                        modal.open();
-                    });
+                    // Positions
+                    document.getElementById('center-modal-btn').addEventListener('click', () => new Modal({ title: 'Center Modal', content: 'Position: center (default)', position: 'center' }).open());
+                    document.getElementById('top-modal-btn').addEventListener('click', () => new Modal({ title: 'Top Modal', content: 'Position: top', position: 'top' }).open());
+                    document.getElementById('right-modal-btn').addEventListener('click', () => new Modal({ title: 'Right Modal', content: 'Position: right', position: 'right', size: 'small' }).open()); // Small looks better for side
+                    document.getElementById('bottom-modal-btn').addEventListener('click', () => new Modal({ title: 'Bottom Modal', content: 'Position: bottom', position: 'bottom' }).open());
+                    document.getElementById('left-modal-btn').addEventListener('click', () => new Modal({ title: 'Left Modal', content: 'Position: left', position: 'left', size: 'small' }).open()); // Small looks better for side
 
-                    document.getElementById('medium-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Medium Modal',
-                            content: 'This is a medium modal dialog.',
-                            size: 'medium'
-                        });
-                        modal.open();
-                    });
+                    // Animations
+                    document.getElementById('fade-modal-btn').addEventListener('click', () => new Modal({ title: 'Fade Animation', content: 'Animation: fade (default)', animationType: 'fade' }).open());
+                    document.getElementById('slide-modal-btn').addEventListener('click', () => new Modal({ title: 'Slide Animation', content: 'Animation: slide', animationType: 'slide' }).open());
+                    document.getElementById('zoom-modal-btn').addEventListener('click', () => new Modal({ title: 'Zoom Animation', content: 'Animation: zoom', animationType: 'zoom' }).open());
+                    document.getElementById('no-animation-modal-btn').addEventListener('click', () => new Modal({ title: 'No Animation', content: 'Animation: none', animationType: 'none' }).open());
 
-                    document.getElementById('large-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Large Modal',
-                            content: 'This is a large modal dialog.',
-                            size: 'large'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('fullscreen-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Fullscreen Modal',
-                            content: 'This is a fullscreen modal dialog.',
-                            size: 'fullscreen'
-                        });
-                        modal.open();
-                    });
-
-                    // Modal Positions
-                    document.getElementById('center-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Center Modal',
-                            content: 'This modal is positioned in the center.',
-                            position: 'center'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('top-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Top Modal',
-                            content: 'This modal is positioned at the top.',
-                            position: 'top'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('right-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Right Modal',
-                            content: 'This modal is positioned at the right.',
-                            position: 'right'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('bottom-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Bottom Modal',
-                            content: 'This modal is positioned at the bottom.',
-                            position: 'bottom'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('left-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Left Modal',
-                            content: 'This modal is positioned at the left.',
-                            position: 'left'
-                        });
-                        modal.open();
-                    });
-
-                    // Modal Animations
-                    document.getElementById('fade-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Fade Animation',
-                            content: 'This modal uses a fade animation.',
-                            animate: true,
-                            animationType: 'fade'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('slide-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Slide Animation',
-                            content: 'This modal uses a slide animation.',
-                            animate: true,
-                            animationType: 'slide'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('zoom-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Zoom Animation',
-                            content: 'This modal uses a zoom animation.',
-                            animate: true,
-                            animationType: 'zoom'
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('no-animation-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'No Animation',
-                            content: 'This modal has no animation.',
-                            animate: false
-                        });
-                        modal.open();
-                    });
-
-                    // Advanced Features
+                    // Advanced
                     document.getElementById('form-modal-btn').addEventListener('click', () => {
-                        const formContent = document.createElement('div');
-                        formContent.innerHTML = `
+                        const formContent = `
                             <form id="demo-form">
-                                <div class="demo-form-group">
-                                    <label for="name">Name</label>
-                                    <input type="text" id="name" required>
+                                <div class="form-group">
+                                    <label for="name">Name:</label>
+                                    <input type="text" id="name" name="name" required>
                                 </div>
-                                <div class="demo-form-group">
-                                    <label for="email">Email</label>
-                                    <input type="email" id="email" required>
-                                </div>
-                                <div class="demo-form-group">
-                                    <label for="message">Message</label>
-                                    <textarea id="message" rows="3" required></textarea>
+                                <div class="form-group">
+                                    <label for="email">Email:</label>
+                                    <input type="email" id="email" name="email" required>
                                 </div>
                             </form>
                         `;
-
-                        const modal = new Modal({
+                        new Modal({
                             title: 'Form Modal',
                             content: formContent,
-                            confirmText: 'Submit',
-                            cancelText: 'Cancel',
-                            onConfirm: () => {
-                                const form = document.getElementById('demo-form');
-                                const name = document.getElementById('name').value;
-                                const email = document.getElementById('email').value;
-                                const message = document.getElementById('message').value;
-
-                                if (name && email && message) {
-                                    console.log('Form submitted:', { name, email, message });
-                                    return true;
-                                } else {
-                                    alert('Please fill out all fields');
-                                    return false;
-                                }
-                            }
-                        });
-                        modal.open();
+                            buttons: [
+                                { text: 'Cancel', class: 'btn-secondary', action: (modal) => modal.close() },
+                                { text: 'Submit', class: 'btn-primary', action: (modal) => {
+                                    const form = document.getElementById('demo-form');
+                                    if (form.checkValidity()) {
+                                        const name = form.name.value;
+                                        const email = form.email.value;
+                                        toast.show('success', 'Form Submitted', `Name: ${name}, Email: ${email}`);
+                                        modal.close();
+                                    } else {
+                                        form.reportValidity(); // Show browser validation messages
+                                        toast.show('error', 'Validation Failed', 'Please fill out the form correctly.');
+                                    }
+                                }}
+                            ]
+                        }).open();
                     });
-
-                    document.getElementById('draggable-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Draggable Modal',
-                            content: 'This modal can be dragged by its header. Try it!',
-                            draggable: true
-                        });
-                        modal.open();
-                    });
-
-                    document.getElementById('resizable-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
-                            title: 'Resizable Modal',
-                            content: 'This modal can be resized using the handles on the edges and corners.',
-                            resizable: true
-                        });
-                        modal.open();
-                    });
-
+                    
+                    document.getElementById('draggable-modal-btn').addEventListener('click', () => new Modal({ title: 'Draggable Modal', content: 'You can drag me by the header.', draggable: true }).open());
+                    document.getElementById('resizable-modal-btn').addEventListener('click', () => new Modal({ title: 'Resizable Modal', content: 'You can resize me from the bottom-right corner.', resizable: true, size: 'medium' }).open()); // Start medium
+                    
                     document.getElementById('custom-buttons-modal-btn').addEventListener('click', () => {
-                        const modal = new Modal({
+                        new Modal({
                             title: 'Custom Buttons',
-                            content: 'This modal has custom buttons in the footer.',
-                            confirmText: 'Save Changes',
-                            cancelText: 'Discard',
-                            confirmButtonClass: 'btn-success',
-                            cancelButtonClass: 'btn-danger',
-                            onConfirm: () => console.log('Changes saved!'),
-                            onCancel: () => console.log('Changes discarded!')
-                        });
-                        modal.open();
+                            content: 'This modal has custom buttons defined.',
+                            buttons: [
+                                { text: 'Info', class: 'btn-info', action: () => toast.show('info', 'Info Button', 'You clicked Info!') },
+                                { text: 'Warning', class: 'btn-warning', action: () => toast.show('error', 'Warning Button', 'You clicked Warning!') },
+                                { text: 'Close Me', class: 'btn-secondary', action: (modal) => modal.close() }
+                            ]
+                        }).open();
                     });
 
-                    // Custom Modal
+                    // Custom Modal Builder
                     document.getElementById('custom-modal-btn').addEventListener('click', () => {
-                        const title = document.getElementById('modal-title').value;
-                        const content = document.getElementById('modal-content').value;
-                        const size = document.getElementById('modal-size').value;
-                        const position = document.getElementById('modal-position').value;
-                        const animation = document.getElementById('modal-animation').value;
-                        const closable = document.getElementById('modal-closable').checked;
-                        const backdrop = document.getElementById('modal-backdrop').checked;
-                        const backdropClosable = document.getElementById('modal-backdrop-closable').checked;
-                        const escClosable = document.getElementById('modal-esc-closable').checked;
-                        const showFooter = document.getElementById('modal-show-footer').checked;
-                        const draggable = document.getElementById('modal-draggable').checked;
-                        const resizable = document.getElementById('modal-resizable').checked;
-
-                        const modal = new Modal({
-                            title,
-                            content,
-                            size,
-                            position,
-                            animate: animation !== 'none',
-                            animationType: animation !== 'none' ? animation : 'fade',
-                            closable,
-                            backdrop,
-                            backdropClosable,
-                            escClosable,
-                            showFooter,
-                            draggable,
-                            resizable
-                        });
-                        modal.open();
+                        const options = {
+                            title: document.getElementById('modal-title').value,
+                            content: document.getElementById('modal-content').value,
+                            size: document.getElementById('modal-size').value,
+                            position: document.getElementById('modal-position').value,
+                            animationType: document.getElementById('modal-animation').value,
+                            closable: document.getElementById('modal-closable').checked,
+                            showBackdrop: document.getElementById('modal-backdrop').checked,
+                            backdropClosable: document.getElementById('modal-backdrop-closable').checked,
+                            escapeClosable: document.getElementById('modal-esc-closable').checked,
+                            showFooter: document.getElementById('modal-show-footer').checked,
+                            draggable: document.getElementById('modal-draggable').checked,
+                            resizable: document.getElementById('modal-resizable').checked,
+                        };
+                        new Modal(options).open();
                     });
-                },
-                 header: {
-                    title: 'Modal Component Demo',
-                    actions: [
-                        {
-                            targetMenuId: 'menu-claims', // Target the home/claims menu item
-                            icon: 'fas fa-home',
-                            text: 'Back to Home'
-                        }
-                    ] // Note: layout.addContentHeader needs modification to handle targetMenuId
                 }
             }
         };
 
-        // Keep track of initialized scripts
-        const initializedScripts = new Set();
+        // Function to handle SPA navigation
+        function handleNavigation(targetMenuId) {
+            console.log('Navigating to:', targetMenuId);
+            
+            // Hide all content sections first
+            Object.values(contentMap).forEach(item => {
+                if (item.content) {
+                    item.content.style.display = 'none';
+                }
+            });
+            
+            // Remove existing content header
+             const existingHeader = contentArea.querySelector('.content-header');
+             if (existingHeader) {
+                 existingHeader.remove();
+             }
 
-        // --- Main Navigation Logic ---
-        function handleNavigation(event) {
-            event.preventDefault(); // Prevent default link behavior
-
-            const link = event.currentTarget;
-            let menuItemId = link.parentElement.id; // Get the ID of the parent li element (sidebar link)
-
-            // If the click came from a header action or home link, get the target ID
-            if (!menuItemId && link.dataset.targetMenuId) {
-                 menuItemId = link.dataset.targetMenuId;
-                 // Find the actual sidebar link to update active state
-                 const targetSidebarLink = document.querySelector(`#${menuItemId} a`);
-                 if (targetSidebarLink) {
-                     // Update active state based on the target
-                     const menu = targetSidebarLink.closest('ul');
-                     if (menu) {
-                         menu.querySelectorAll('li').forEach(item => item.classList.remove('active'));
-                         targetSidebarLink.parentElement.classList.add('active');
-                     }
-                 }
-            } else if (menuItemId) {
-                 // Update active state for sidebar clicks
-                 const menu = link.closest('ul'); // Find parent ul
-                 if (menu) {
-                    menu.querySelectorAll('li').forEach(item => item.classList.remove('active'));
-                    link.parentElement.classList.add('active');
-                 }
-            } else {
-                console.warn("Could not determine menu item ID for navigation.");
-                return; // Cannot proceed without a target
-            }
-
-
-            // Determine which content to show based on the menu item ID
-            const targetContent = contentMap[menuItemId];
-
-            if (targetContent) {
-                // Hide all demo content containers AND the home content
-                document.querySelectorAll('#home-content, #dynamic-content-area > div').forEach(container => {
-                    container.style.display = 'none';
-                });
-
-                // Clear previous content from the main content area using layout instance method if available
-                // Assuming layout.js provides layoutInstance.clearContent() or similar
-                // Otherwise, clear manually:
-                contentArea.innerHTML = '';
-                contentArea.scrollTop = 0; // Scroll to top of content area
-
-                // Update the content header first (before adding main content)
-                // We need to modify layout.addContentHeader to handle SPA links
-                if (targetContent.header) {
-                    // TODO: Modify layout.addContentHeader in layout.js to accept targetMenuId
-                    // and add appropriate event listeners to header action links.
-                    // For now, we'll manually create the header structure here.
-
-                    const contentHeader = document.createElement('div');
-                    contentHeader.className = 'content-header';
-                    let actionsHtml = '';
-                    if (targetContent.header.actions && targetContent.header.actions.length > 0) {
-                        actionsHtml = `
-                            <div class="actions">
-                                ${targetContent.header.actions.map(action => `
-                                    <a href="#" class="btn btn-primary header-nav-link" data-target-menu-id="${action.targetMenuId}">
-                                        <i class="${action.icon}"></i> ${action.text}
-                                    </a>
-                                `).join('')}
-                            </div>
-                        `;
+            const target = contentMap[targetMenuId];
+            
+            if (target) {
+                if (target.externalUrl) {
+                    // Handle navigation to a different HTML page
+                    window.location.href = target.externalUrl;
+                } else if (target.content) {
+                    // Show the target content div
+                    target.content.style.display = 'block';
+                    layout.setActiveMenuItem(targetMenuId);
+                    
+                    // Add content header if defined
+                    if (target.header) {
+                         layout.addContentHeader(target.header.title, target.header.actions);
                     }
-                    contentHeader.innerHTML = `<h1>${targetContent.header.title}</h1>${actionsHtml}`;
-                    contentArea.appendChild(contentHeader); // Add header first
-
-                    // Add listeners to newly added header links
-                    contentHeader.querySelectorAll('.header-nav-link').forEach(headerLink => {
-                         headerLink.addEventListener('click', handleNavigation);
-                    });
-
-                } else {
-                    // Default header if none specified
-                    const defaultHeader = document.createElement('div');
-                    defaultHeader.className = 'content-header';
-                    defaultHeader.innerHTML = `<h1>${link.textContent.trim()}</h1>`;
-                    contentArea.appendChild(defaultHeader);
+                    
+                    // Run initialization script if defined
+                    if (target.init) {
+                        target.init();
+                    }
                 }
-
-
-                // Show the selected content
-                if (targetContent.content) {
-                    // Append the content element to the content area
-                    contentArea.appendChild(targetContent.content);
-                    targetContent.content.style.display = 'block'; // Ensure the container is visible
-                } else {
-                     // Handle cases where content is not a direct element
-                     console.warn(`Content element not found for ${menuItemId}`);
-                }
-
-
-                // Execute initialization script if not already initialized or if re-init is needed
-                // (Re-init logic might be necessary if components don't render correctly after being hidden/shown)
-                if (targetContent.init) { // Always run init for simplicity now
-                    targetContent.init();
-                    // initializedScripts.add(menuItemId); // Keep track if needed later
-                }
-                // else if (targetContent.init && initializedScripts.has(menuItemId)) {
-                    // Re-initialization logic (as before)
-                    // ...
-                // }
-
-
             } else {
-                // Fallback for links that don't have mapped content
-                console.warn(`No content mapped for menu item: ${menuItemId}`);
-                // Optionally load default content or show an error
-                 contentArea.innerHTML = `<h1>Error</h1><p>Content for ${menuItemId} not found.</p>`;
+                // Default to home content if target ID is not found
+                console.warn(`Target menu ID "${targetMenuId}" not found in contentMap. Defaulting to home.`);
+                const homeTarget = contentMap['menu-claims'];
+                if (homeTarget && homeTarget.content) {
+                    homeTarget.content.style.display = 'block';
+                    layout.setActiveMenuItem('menu-claims');
+                     if (homeTarget.header) {
+                         layout.addContentHeader(homeTarget.header.title, homeTarget.header.actions);
+                     }
+                     if (homeTarget.init) {
+                        homeTarget.init();
+                    }
+                }
             }
         }
 
-        // --- Initial Setup ---
-
-        // Add navigation listeners to all sidebar menu links
-        document.querySelectorAll('.sidebar-nav ul li a').forEach(link => {
-            link.addEventListener('click', handleNavigation);
+        // Add event listeners for sidebar navigation links
+        document.querySelectorAll('.sidebar-nav a').forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                const targetMenuId = link.closest('li').id;
+                handleNavigation(targetMenuId);
+            });
         });
-
-        // Function to set up listeners for home page navigation links
+        
+        // Add event listeners for header action links (if any)
+        // Use event delegation on the content area
+        contentArea.addEventListener('click', (e) => {
+             const headerLink = e.target.closest('.header-nav-link');
+             if (headerLink && headerLink.dataset.targetMenuId) {
+                 e.preventDefault();
+                 handleNavigation(headerLink.dataset.targetMenuId);
+             }
+        });
+        
+        // Function to set up home page navigation links (called by init for 'menu-claims')
         function setupHomeNavLinks() {
             document.querySelectorAll('.home-nav-link').forEach(link => {
-                // Remove existing listener to prevent duplicates if called multiple times
-                link.removeEventListener('click', handleHomeLinkClick);
-                // Add the listener
-                link.addEventListener('click', handleHomeLinkClick);
+                // Remove existing listeners to prevent duplicates if init is called multiple times
+                link.replaceWith(link.cloneNode(true)); 
+            });
+            // Add new listeners
+             document.querySelectorAll('.home-nav-link').forEach(link => {
+                link.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    const targetMenuId = e.currentTarget.dataset.targetMenuId;
+                    if (targetMenuId) {
+                        handleNavigation(targetMenuId);
+                    }
+                });
             });
         }
 
-        // Handler for home page link clicks
-        function handleHomeLinkClick(event) {
-             event.preventDefault();
-             const targetMenuId = event.currentTarget.dataset.targetMenuId;
-             const targetSidebarLink = document.querySelector(`#${targetMenuId} a`);
-             if (targetSidebarLink) {
-                 targetSidebarLink.click(); // Simulate a click on the corresponding sidebar link
-             } else {
-                 console.warn(`Target sidebar link not found for ID: ${targetMenuId}`);
-             }
-        }
+        // Note: Initial content display is now handled within the fetch().then() block
+        // after successful user verification.
 
-        // Sidebar toggle listener (from layout.js, ensure it exists)
-        const toggle = document.getElementById('viewModeToggle');
-        // The updateMenus function needs to be defined or imported if it's used here
-        // Assuming updateMenus is handled within layout.js now
-        // if (toggle) {
-        //     toggle.addEventListener('change', updateMenus);
-        // }
-
-        // Initial menu state (handled by layout.js)
-        // updateMenus();
-
-        // Initialize the home content
-        initializeHomeContent();
-        
-        // Function to initialize home content
-        function initializeHomeContent() {
-            const homeContent = document.getElementById('home-content');
-            if (homeContent) {
-                // Show home content
-                homeContent.style.display = 'block';
-                
-                // Add content header
-                layout.addContentHeader('Claims Hive Components', [
-                    {
-                        targetMenuId: 'menu-datatable-demo',
-                        icon: 'fa-solid fa-table',
-                        text: 'View DataTable Demo'
-                    },
-                    {
-                        targetMenuId: 'menu-charts-demo',
-                        icon: 'fa-solid fa-chart-pie',
-                        text: 'View Charts Demo'
-                    },
-                    {
-                        targetMenuId: 'menu-modal-demo',
-                        icon: 'fa-solid fa-window-maximize',
-                        text: 'View Modal Demo'
-                    }
-                ]);
-                
-                // Add home content to layout
-                layout.addContent(homeContent);
-                
-                // Set up home nav links
-                setupHomeNavLinks();
-                
-                // Add event listeners to header action links
-                document.querySelectorAll('.header-nav-link').forEach(link => {
-                    link.addEventListener('click', handleNavigation);
-                });
-            } else {
-                // Fallback if home content not found
-                contentArea.innerHTML = `<h1>Welcome</h1><p>Default content.</p>`;
-            }
-        }
-
-        // Initial content load for the default active menu item is now handled by the simulated click above.
-
-        // Remove the global modal logic from script.js
-        // This will be done in the next apply_diff to script.js if needed
     </script>
 </body>
 </html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Companies - Claims Hive</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="components/layout.css">
+    <link rel="stylesheet" href="components/DataTable/dataTable.css">
+    <link rel="stylesheet" href="admin-table.css">
+    
+    <!-- Font Awesome CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="data-table-container"></div>
+    
+    <script type="module">
+        // Check if user is logged in
+        const token = localStorage.getItem('claims_hive_token');
+        const user = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+        
+        // If no token, redirect to login page
+        if (!token) {
+            window.location.href = 'login.html';
+        }
+        
+        // Verify token with the server
+        fetch('/api/auth/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Token is invalid, clear it and redirect to login
+                localStorage.removeItem('claims_hive_token');
+                localStorage.removeItem('claims_hive_user');
+                window.location.href = 'login.html';
+                throw new Error('Invalid token');
+            }
+            return response.json();
+        })
+        .then(userData => {
+            console.log('User verified:', userData);
+            // Update user data in localStorage
+            localStorage.setItem('claims_hive_user', JSON.stringify(userData));
+        })
+        .catch(error => {
+            console.error('Error verifying token:', error);
+        });
+        
+        import Layout from './components/layout.js';
+        import AdminTable from './admin-table.js';
+        
+        // Create layout
+        const layout = new Layout({
+            title: 'Claims Hive',
+            activeMenuItem: 'menu-companies',
+            isAdminMode: true
+        });
+        
+        // Add content header without navigation buttons - note the comma between 'Companies' and []
+        layout.addContentHeader('Companies', []);
+        
+        // Define columns
+        const columns = [
+            {
+                field: 'company_id',
+                title: 'ID',
+                type: 'number',
+                sortable: true,
+                editable: false
+            },
+            {
+                field: 'name',
+                title: 'Name',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'type',
+                title: 'Type',
+                type: 'select',
+                sortable: true,
+                options: [
+                    { value: 'admin', text: 'Admin' },
+                    { value: 'affiliate', text: 'Affiliate' },
+                    { value: 'buyer', text: 'Buyer' }
+                ]
+            },
+            {
+                field: 'created',
+                title: 'Created',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                field: 'updated',
+                title: 'Updated',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            }
+        ];
+        
+        // Initialize admin table
+        const adminTable = new AdminTable({
+            tableName: 'company',
+            title: 'Company',
+            columns: columns,
+            containerId: 'data-table-container',
+            apiEndpoint: '/api/company'
+        });
+    </script>
+</body>
+</html>
