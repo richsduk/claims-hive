@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roles - Claims Hive</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="components/layout.css">
+    <link rel="stylesheet" href="components/DataTable/dataTable.css">
+    <link rel="stylesheet" href="admin-table.css">
+    
+    <!-- Font Awesome CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        /* Role permissions matrix styles */
+        .permissions-matrix {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        
+        .permissions-matrix th,
+        .permissions-matrix td {
+            border: 1px solid #dee2e6;
+            padding: 8px;
+            text-align: center;
+        }
+        
+        .permissions-matrix th {
+            background-color: #f8f9fa;
+            font-weight: 500;
+        }
+        
+        .permissions-matrix tr:nth-child(even) {
+            background-color: #f8f9fa;
+        }
+        
+        .permissions-matrix .resource-name {
+            text-align: left;
+            font-weight: 500;
+        }
+        
+        .permissions-matrix .scope-header {
+            background-color: #e9ecef;
+            font-weight: 600;
+        }
+        
+        .permissions-matrix .permission-checkbox {
+            margin: 0;
+        }
+    </style>
+</head>
+<body>
+    <div id="data-table-container"></div>
+    
+    <script type="module">
+        // Check if user is logged in
+        const token = localStorage.getItem('claims_hive_token');
+        const user = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+        
+        // If no token, redirect to login page
+        if (!token) {
+            window.location.href = 'login.html';
+            return; // Stop execution
+        }
+        
+        // Verify token with the server
+        fetch('/api/auth/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Token is invalid, clear it and redirect to login
+                localStorage.removeItem('claims_hive_token');
+                localStorage.removeItem('claims_hive_user');
+                window.location.href = 'login.html';
+                throw new Error('Invalid token');
+            }
+            return response.json();
+        })
+        .then(userData => {
+            console.log('User verified:', userData);
+            // Update user data in localStorage
+            localStorage.setItem('claims_hive_user', JSON.stringify(userData));
+        })
+        .catch(error => {
+            console.error('Error verifying token:', error);
+        });
+        
+        import Layout from './components/layout.js';
+        import AdminTable from './admin-table.js';
+        import Modal from './components/Modal/Modal.js';
+        
+        // Create layout
+        const layout = new Layout({
+            title: 'Claims Hive',
+            activeMenuItem: 'menu-roles',
+            isAdminMode: true
+        });
+        
+        // Add content header
+        layout.addContentHeader('Roles', [
+            {
+                targetMenuId: 'menu-companies',
+                icon: 'fa-solid fa-briefcase',
+                text: 'Companies'
+            },
+            {
+                targetMenuId: 'menu-users',
+                icon: 'fa-solid fa-user-shield',
+                text: 'Users'
+            },
+            {
+                targetMenuId: 'menu-claim-types',
+                icon: 'fa-solid fa-puzzle-piece',
+                text: 'Claim Types'
+            }
+        ]);
+        
+        // Define columns
+        const columns = [
+            {
+                field: 'role_id',
+                title: 'ID',
+                type: 'number',
+                sortable: true,
+                editable: false
+            },
+            {
+                field: 'name',
+                title: 'Name',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'created',
+                title: 'Created',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                field: 'updated',
+                title: 'Updated',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                actions: [
+                    {
+                        icon: 'fas fa-edit',
+                        title: 'Edit',
+                        class: 'edit',
+                        onClick: (rowData) => showEditModal(rowData)
+                    },
+                    {
+                        icon: 'fas fa-trash',
+                        title: 'Delete',
+                        class: 'delete',
+                        onClick: (rowData) => confirmDelete(rowData)
+                    },
+                    {
+                        icon: 'fas fa-key',
+                        title: 'Permissions',
+                        class: 'permissions',
+                        onClick: (rowData) => showPermissionsModal(rowData)
+                    }
+                ]
+            }
+        ];
+        
+        // Initialize admin table
+        const adminTable = new AdminTable({
+            tableName: 'role',
+            title: 'Role',
+            columns: columns,
+            containerId: 'data-table-container',
+            apiEndpoint: '/api/role'
+        });
+        
+        // Custom edit modal for roles
+        function showEditModal(rowData = null) {
+            const isEdit = rowData !== null;
+            const title = isEdit ? `Edit Role` : `Add New Role`;
+            
+            // Create form content
+            const formContent = document.createElement('div');
+            formContent.className = 'admin-form';
+            
+            formContent.innerHTML = `
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" value="${isEdit ? rowData.name : ''}" class="form-control">
+                </div>
+            `;
+            
+            // Create modal
+            const modal = new Modal({
+                title: title,
+                content: formContent,
+                size: 'medium',
+                confirmText: 'Save',
+                cancelText: 'Cancel',
+                onConfirm: () => saveRole(isEdit, rowData)
+            });
+            
+            modal.open();
+        }
+        
+        // Save role
+        async function saveRole(isEdit, originalData) {
+            try {
+                // Get form values
+                const name = document.getElementById('name').value;
+                
+                // Prepare data
+                const data = { name };
+                
+                // Determine API endpoint and method
+                let url = '/api/role';
+                let method = 'POST';
+                
+                if (isEdit) {
+                    url = `${url}/${originalData.role_id}`;
+                    method = 'PUT';
+                }
+                
+                // Send request
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to save role: ${response.status} ${response.statusText}`);
+                }
+                
+                // Refresh data
+                adminTable.refreshData();
+                
+                return true;
+            } catch (error) {
+                console.error('Error saving role:', error);
+                Modal.alert('Failed to save role. Please try again later.', 'Error');
+                return false;
+            }
+        }
+        
+        // Confirm delete
+        function confirmDelete(rowData) {
+            Modal.confirm(
+                `Are you sure you want to delete the role "${rowData.name}"?`,
+                'Confirm Delete',
+                () => deleteRole(rowData),
+                () => {}
+            );
+        }
+        
+        // Delete role
+        async function deleteRole(rowData) {
+            try {
+                const response = await fetch(`/api/role/${rowData.role_id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to delete role: ${response.status} ${response.statusText}`);
+                }
+                
+                // Refresh data
+                adminTable.refreshData();
+                
+                return true;
+            } catch (error) {
+                console.error('Error deleting role:', error);
+                Modal.alert('Failed to delete role. Please try again later.', 'Error');
+                return false;
+            }
+        }
+        
+        // Show permissions modal
+        async function showPermissionsModal(rowData) {
+            try {
+                // Fetch role permissions
+                const response = await fetch(`/api/role/${rowData.role_id}/permissions`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch permissions: ${response.status} ${response.statusText}`);
+                }
+                
+                const permissions = await response.json();
+                
+                // Create permissions matrix
+                const permissionsContent = document.createElement('div');
+                permissionsContent.className = 'permissions-content';
+                
+                // Define resources and scopes
+                const resources = ['claims', 'clients', 'logs', 'companies'];
+                const scopes = ['global', 'company', 'user'];
+                const operations = ['create', 'read', 'update', 'delete'];
+                
+                // Create matrix HTML
+                let matrixHtml = `
+                    <p>Set permissions for the "${rowData.name}" role:</p>
+                    <table class="permissions-matrix">
+                        <thead>
+                            <tr>
+                                <th></th>
+                                <th colspan="4" class="scope-header">Global</th>
+                                <th colspan="4" class="scope-header">Company</th>
+                                <th colspan="4" class="scope-header">User</th>
+                            </tr>
+                            <tr>
+                                <th>Resource</th>
+                `;
+                
+                // Add operation headers for each scope
+                scopes.forEach(scope => {
+                    operations.forEach(operation => {
+                        matrixHtml += `<th>${operation.charAt(0).toUpperCase()}</th>`;
+                    });
+                });
+                
+                matrixHtml += `
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                
+                // Add rows for each resource
+                resources.forEach(resource => {
+                    matrixHtml += `
+                        <tr>
+                            <td class="resource-name">${resource.charAt(0).toUpperCase() + resource.slice(1)}</td>
+                    `;
+                    
+                    // Add checkboxes for each scope and operation
+                    scopes.forEach(scope => {
+                        operations.forEach(operation => {
+                            // Find permission
+                            const permission = permissions.find(p => 
+                                p.resource === resource && 
+                                p.scope === scope
+                            );
+                            
+                            const checked = permission && permission[`can_${operation}`] ? 'checked' : '';
+                            
+                            matrixHtml += `
+                                <td>
+                                    <input type="checkbox" 
+                                           class="permission-checkbox" 
+                                           data-resource="${resource}" 
+                                           data-scope="${scope}" 
+                                           data-operation="${operation}" 
+                                           ${checked}>
+                                </td>
+                            `;
+                        });
+                    });
+                    
+                    matrixHtml += `</tr>`;
+                });
+                
+                matrixHtml += `
+                        </tbody>
+                    </table>
+                `;
+                
+                permissionsContent.innerHTML = matrixHtml;
+                
+                // Create modal
+                const modal = new Modal({
+                    title: `Permissions for ${rowData.name}`,
+                    content: permissionsContent,
+                    size: 'large',
+                    confirmText: 'Save',
+                    cancelText: 'Cancel',
+                    onConfirm: () => savePermissions(rowData)
+                });
+                
+                modal.open();
+            } catch (error) {
+                console.error('Error fetching permissions:', error);
+                Modal.alert('Failed to fetch permissions. Please try again later.', 'Error');
+            }
+        }
+        
+        // Save permissions
+        async function savePermissions(rowData) {
+            try {
+                // Collect permissions from checkboxes
+                const permissionsMap = {};
+                
+                document.querySelectorAll('.permission-checkbox').forEach(checkbox => {
+                    const resource = checkbox.dataset.resource;
+                    const scope = checkbox.dataset.scope;
+                    const operation = checkbox.dataset.operation;
+                    
+                    // Create key for resource and scope
+                    const key = `${resource}:${scope}`;
+                    
+                    if (!permissionsMap[key]) {
+                        permissionsMap[key] = {
+                            resource,
+                            scope,
+                            can_create: false,
+                            can_read: false,
+                            can_update: false,
+                            can_delete: false
+                        };
+                    }
+                    
+                    // Set operation value
+                    permissionsMap[key][`can_${operation}`] = checkbox.checked;
+                });
+                
+                // Convert map to array
+                const permissions = Object.values(permissionsMap);
+                
+                // Send request
+                const response = await fetch(`/api/role/${rowData.role_id}/permissions`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ permissions })
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to save permissions: ${response.status} ${response.statusText}`);
+                }
+                
+                // Show success message
+                Modal.alert('Permissions saved successfully.', 'Success');
+                
+                return true;
+            } catch (error) {
+                console.error('Error saving permissions:', error);
+                Modal.alert('Failed to save permissions. Please try again later.', 'Error');
+                return false;
+            }
+        }
+    </script>
+</body>
+</html>

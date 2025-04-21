@@ -227,16 +227,23 @@ class DataTable {
     updateRow(id, newData, idField = 'id') {
         const index = this.options.data.findIndex(item => item[idField] === id);
         if (index !== -1) {
+            console.log(`Updating row at index ${index} with new data:`, newData);
             this.options.data[index] = { ...this.options.data[index], ...newData };
-            this.state.lastUpdatedRows.add(id);
+            
+            // Use the appropriate ID for highlighting
+            const highlightId = idField === 'id' ? id : newData[idField];
+            this.state.lastUpdatedRows.add(highlightId);
+            
             this.updateVisibleData();
             this.render();
             
             // Clear the updated row highlight after animation
             setTimeout(() => {
-                this.state.lastUpdatedRows.delete(id);
+                this.state.lastUpdatedRows.delete(highlightId);
                 this.render();
             }, 2000);
+        } else {
+            console.warn(`Row with ${idField}=${id} not found for update`);
         }
     }
     
@@ -246,19 +253,36 @@ class DataTable {
      */
     addRow(newRow) {
         this.options.data.push(newRow);
-        if (newRow.id) {
-            this.state.lastUpdatedRows.add(newRow.id);
-        }
-        this.updateVisibleData();
-        this.render();
         
-        // Clear the updated row highlight after animation
+        // Find an ID field to use for highlighting
+        let highlightId = null;
         if (newRow.id) {
+            highlightId = newRow.id;
+        } else {
+            // Try to find a suitable ID field
+            const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
+            for (const idField of possibleIdFields) {
+                if (newRow[idField]) {
+                    highlightId = newRow[idField];
+                    break;
+                }
+            }
+        }
+        
+        // Add to highlighted rows if we found an ID
+        if (highlightId) {
+            console.log(`Highlighting new row with ID: ${highlightId}`);
+            this.state.lastUpdatedRows.add(highlightId);
+            
+            // Clear the updated row highlight after animation
             setTimeout(() => {
-                this.state.lastUpdatedRows.delete(newRow.id);
+                this.state.lastUpdatedRows.delete(highlightId);
                 this.render();
             }, 2000);
         }
+        
+        this.updateVisibleData();
+        this.render();
     }
     
     /**
@@ -267,12 +291,32 @@ class DataTable {
      * @param {string} idField - Field to use as ID (default: 'id')
      */
     removeRow(id, idField = 'id') {
-        const index = this.options.data.findIndex(item => item[idField] === id);
+        // First try with the provided ID field
+        let index = this.options.data.findIndex(item => item[idField] === id);
+        
+        // If not found and using default 'id' field, try alternative ID fields
+        if (index === -1 && idField === 'id') {
+            console.log(`Row with id=${id} not found, trying alternative ID fields`);
+            const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
+            
+            for (const altIdField of possibleIdFields) {
+                index = this.options.data.findIndex(item => item[altIdField] === id);
+                if (index !== -1) {
+                    console.log(`Found row with ${altIdField}=${id}`);
+                    idField = altIdField;
+                    break;
+                }
+            }
+        }
+        
         if (index !== -1) {
+            console.log(`Removing row at index ${index} with ${idField}=${id}`);
             this.options.data.splice(index, 1);
             this.state.selectedRows.delete(id);
             this.updateVisibleData();
             this.render();
+        } else {
+            console.warn(`Row with ${idField}=${id} not found for removal`);
         }
     }
     
@@ -371,14 +415,35 @@ class DataTable {
         this.state.visibleData.forEach((rowData, rowIndex) => {
             const row = document.createElement('tr');
             
-            // Add row ID if available
+            // Add row ID if available and handle highlighting
+            let rowId = null;
+            
+            // First try standard id
             if (rowData.id) {
-                row.dataset.id = rowData.id;
-                
-                // Highlight recently updated rows
-                if (this.state.lastUpdatedRows.has(rowData.id)) {
-                    row.classList.add('highlight-update');
+                rowId = rowData.id;
+                row.dataset.id = rowId;
+            }
+            
+            // Check for alternative ID fields
+            const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
+            for (const idField of possibleIdFields) {
+                if (rowData[idField]) {
+                    if (!rowId) {
+                        rowId = rowData[idField];
+                        row.dataset[idField] = rowId;
+                    }
+                    
+                    // Check if this row should be highlighted
+                    if (this.state.lastUpdatedRows.has(rowData[idField])) {
+                        row.classList.add('highlight-update');
+                        break;
+                    }
                 }
+            }
+            
+            // Highlight if standard id is in lastUpdatedRows
+            if (rowId && this.state.lastUpdatedRows.has(rowId)) {
+                row.classList.add('highlight-update');
             }
             
             // Add selection column if selectable
@@ -506,14 +571,35 @@ class DataTable {
             const card = document.createElement('div');
             card.className = 'data-card';
             
-            // Add card ID if available
+            // Add card ID if available and handle highlighting
+            let cardId = null;
+            
+            // First try standard id
             if (rowData.id) {
-                card.dataset.id = rowData.id;
-                
-                // Highlight recently updated cards
-                if (this.state.lastUpdatedRows.has(rowData.id)) {
-                    card.classList.add('highlight-update');
+                cardId = rowData.id;
+                card.dataset.id = cardId;
+            }
+            
+            // Check for alternative ID fields
+            const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
+            for (const idField of possibleIdFields) {
+                if (rowData[idField]) {
+                    if (!cardId) {
+                        cardId = rowData[idField];
+                        card.dataset[idField] = cardId;
+                    }
+                    
+                    // Check if this card should be highlighted
+                    if (this.state.lastUpdatedRows.has(rowData[idField])) {
+                        card.classList.add('highlight-update');
+                        break;
+                    }
                 }
+            }
+            
+            // Highlight if standard id is in lastUpdatedRows
+            if (cardId && this.state.lastUpdatedRows.has(cardId)) {
+                card.classList.add('highlight-update');
             }
             
             // Add card header (title)
@@ -917,12 +1003,37 @@ class DataTable {
      * @param {Object|Array} data - Updated data
      */
     handleWebSocketUpdate(data) {
+        console.log('Handling WebSocket update message:', data);
         if (Array.isArray(data)) {
             // Handle bulk update
+            console.log('Handling bulk update');
             this.updateData(data);
         } else if (data.id) {
             // Handle single row update
+            console.log('Handling single row update with ID:', data.id);
             this.updateRow(data.id, data);
+        } else {
+            // Try to find a suitable ID field based on the data
+            console.log('No standard ID field found, looking for alternative ID fields');
+            const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
+            for (const idField of possibleIdFields) {
+                if (data[idField]) {
+                    console.log(`Found alternative ID field: ${idField} with value: ${data[idField]}`);
+                    
+                    // Find the row with this ID field
+                    const existingRow = this.options.data.find(item => item[idField] === data[idField]);
+                    
+                    if (existingRow) {
+                        console.log(`Found existing row with ${idField}=${data[idField]}`);
+                        this.updateRow(data[idField], data, idField);
+                    } else {
+                        console.log(`No existing row found with ${idField}=${data[idField]}, adding as new row`);
+                        this.addRow(data);
+                    }
+                    return;
+                }
+            }
+            console.warn('Could not find any ID field in the update data:', data);
         }
     }
     

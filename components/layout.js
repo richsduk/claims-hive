@@ -79,6 +79,13 @@ export default class Layout {
         const header = document.createElement('header');
         header.className = 'app-header';
         
+        // Get user data from localStorage
+        const userData = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+        const firstName = userData.first || 'Guest';
+        const lastName = userData.last || '';
+        const initials = firstName.charAt(0) + (lastName ? lastName.charAt(0) : '');
+        const fullName = firstName + (lastName ? ' ' + lastName : '');
+        
         header.innerHTML = `
             <div class="header-logo">
                 <a href="#">
@@ -88,14 +95,50 @@ export default class Layout {
             <button class="menu-toggle" id="menuToggle">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="user-profile">
-                <span class="avatar">JD</span>
-                <span>John Doe</span>
+            <div class="user-profile" id="userProfileDropdown">
+                <span class="avatar">${initials}</span>
+                <span>${fullName}</span>
                 <i class="fa-solid fa-caret-down"></i>
+                <div class="user-dropdown">
+                    <ul>
+                        <li><a href="#" id="profileLink"><i class="fa-solid fa-user"></i> Profile</a></li>
+                        <li><a href="#" id="settingsLink"><i class="fa-solid fa-gear"></i> Settings</a></li>
+                        <li class="divider"></li>
+                        <li><a href="#" id="logoutLink"><i class="fa-solid fa-sign-out-alt"></i> Logout</a></li>
+                    </ul>
+                </div>
             </div>
         `;
         
         document.body.prepend(header);
+        
+        // Add event listener for logout
+        const logoutLink = header.querySelector('#logoutLink');
+        if (logoutLink) {
+            logoutLink.addEventListener('click', (e) => {
+                e.preventDefault();
+                // Clear localStorage
+                localStorage.removeItem('claims_hive_token');
+                localStorage.removeItem('claims_hive_user');
+                // Redirect to login page
+                window.location.href = 'login.html';
+            });
+        }
+        
+        // Toggle dropdown on click
+        const userProfile = header.querySelector('#userProfileDropdown');
+        if (userProfile) {
+            userProfile.addEventListener('click', (e) => {
+                userProfile.classList.toggle('active');
+            });
+            
+            // Close dropdown when clicking outside
+            document.addEventListener('click', (e) => {
+                if (!userProfile.contains(e.target)) {
+                    userProfile.classList.remove('active');
+                }
+            });
+        }
     }
     
     /**
@@ -127,6 +170,7 @@ export default class Layout {
                     <li id="menu-claims"><a href="#"><i class="fa-solid fa-ticket"></i><span> Claims</span></a></li>
                     <li id="menu-clients"><a href="#"><i class="fa-solid fa-users"></i><span> Clients</span></a></li>
                     <li id="menu-stats"><a href="#"><i class="fa-solid fa-chart-line"></i><span> Stats</span></a></li>
+                    <li class="menu-divider"><span>Demo Components</span></li>
                     <li id="menu-datatable-demo"><a href="#"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
                     <li id="menu-charts-demo"><a href="#"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
                     <li id="menu-modal-demo"><a href="#"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>
@@ -134,15 +178,16 @@ export default class Layout {
                 
                 <!-- Admin Menu (Initially Hidden) -->
                 <ul id="admin-menu">
-                    <li id="menu-companies"><a href="#"><i class="fa-solid fa-briefcase"></i><span> Companies</span></a></li>
-                    <li id="menu-users"><a href="#"><i class="fa-solid fa-user-shield"></i><span> Users</span></a></li>
-                    <li id="menu-roles"><a href="#"><i class="fa-solid fa-user-tag"></i><span> Roles</span></a></li>
-                    <li id="menu-claim-types"><a href="#"><i class="fa-solid fa-puzzle-piece"></i><span> Claim Types</span></a></li>
+                    <li id="menu-companies"><a href="#" data-table="company"><i class="fa-solid fa-briefcase"></i><span> Companies</span></a></li>
+                    <li id="menu-users"><a href="#" data-table="user"><i class="fa-solid fa-user-shield"></i><span> Users</span></a></li>
+                    <li id="menu-roles"><a href="#" data-table="role"><i class="fa-solid fa-user-tag"></i><span> Roles</span></a></li>
+                    <li id="menu-claim-types"><a href="#" data-table="claim_type"><i class="fa-solid fa-puzzle-piece"></i><span> Claim Types</span></a></li>
                     <li id="menu-stats-admin"><a href="#"><i class="fa-solid fa-chart-pie"></i><span> Stats (Admin)</span></a></li>
-                    <li id="menu-logs"><a href="#"><i class="fa-solid fa-clipboard-list"></i><span> Logs</span></a></li>
+                    <li id="menu-logs"><a href="#" data-table="log"><i class="fa-solid fa-clipboard-list"></i><span> Logs</span></a></li>
                     <li id="menu-message-queue"><a href="#"><i class="fa-solid fa-envelopes-bulk"></i><span> Message Queue</span></a></li>
                     <li id="menu-claim-flows"><a href="#"><i class="fa-regular fa-paper-plane"></i><span> Claim Flows</span></a></li>
                     <li id="menu-settings"><a href="#"><i class="fa-solid fa-gear"></i><span> Settings</span></a></li>
+                    <li class="menu-divider"><span>Demo Components</span></li>
                     <li id="menu-datatable-demo-admin"><a href="#"><i class="fa-solid fa-table"></i><span> DataTable Demo</span></a></li>
                     <li id="menu-charts-demo-admin"><a href="#"><i class="fa-solid fa-chart-pie"></i><span> Charts Demo</span></a></li>
                     <li id="menu-modal-demo-admin"><a href="#"><i class="fa-solid fa-window-maximize"></i><span> Modal Demo</span></a></li>

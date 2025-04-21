@@ -10,18 +10,43 @@ const User = require('../models/user');
 const Company = require('../models/company');
 const { authenticate } = require('../middleware/auth');
 
+console.log('--- Loading server/routes/auth.js ---'); // Add log here
+
+/**
+ * @route GET /api/auth/test
+ * @desc Test endpoint
+ * @access Public
+ */
+router.get('/test', (req, res) => {
+  console.log('--- Reached /api/auth/test handler ---'); // Add log here
+  console.log('Test endpoint hit');
+  res.json({ message: 'Auth API is working!' });
+});
+
 /**
  * @route POST /api/auth/login
  * @desc Authenticate user and get token
  * @access Public
  */
 router.post('/login', async (req, res) => {
-  try {
+    try {
     const { email, password } = req.body;
     
     // Validate input
     if (!email || !password) {
       return res.status(400).json({ message: 'Please provide email and password' });
+    }
+    
+    // Debug: Get the user by email to check the stored hash
+    const userRecord = await User.getByEmail(email);
+    if (userRecord) {
+      console.log('Debug - Login attempt:', { 
+        email, 
+        password,
+        stored_hash: userRecord.password_hash
+      });
+    } else {
+      console.log('Debug - Login attempt: User not found', { email });
     }
     
     // Authenticate user
@@ -52,7 +77,9 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error('Login error:', err);
-    res.status(500).json({ message: 'Server error' });
+    console.error('Login error stack:', err.stack);
+    console.error('Login error details:', JSON.stringify(err, null, 2));
+    res.status(500).json({ message: 'Server error: ' + err.message });
   }
 });
 

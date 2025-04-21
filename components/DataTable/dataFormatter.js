@@ -245,10 +245,12 @@ const DataFormatter = {
     format: function(value, type, options = {}) {
         switch (type) {
             case 'number':
+                const numberOptions = { ...options, style: 'decimal' };
+                return this.formatNumber(value, numberOptions);
             case 'currency':
             case 'percent':
-                const numberOptions = type === 'text' ? options : { ...options, style: type };
-                return this.formatNumber(value, numberOptions);
+                const styleOptions = { ...options, style: type };
+                return this.formatNumber(value, styleOptions);
             case 'date':
             case 'datetime':
             case 'time':

@@ -1,0 +1,210 @@
+/**
+ * Admin Table Styles
+ */
+
+/* Admin table header */
+.admin-table-header {
+    margin-bottom: 20px;
+}
+
+.admin-table-actions {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Admin form styles */
+.admin-form {
+    padding: 10px;
+}
+
+.admin-form .form-group {
+    margin-bottom: 15px;
+}
+
+.admin-form label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #343a40;
+}
+
+.admin-form .form-control {
+    width: 100%;
+    padding: 8px 12px;
+    font-size: 14px;
+    line-height: 1.5;
+    color: #495057;
+    background-color: #fff;
+    background-clip: padding-box;
+    border: 1px solid #ced4da;
+    border-radius: 4px;
+    transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.admin-form .form-control:focus {
+    color: #495057;
+    background-color: #fff;
+    border-color: #80bdff;
+    outline: 0;
+    box-shadow: 0 0 0 0.2rem rgba(0, 123, 255, 0.25);
+}
+
+.admin-form textarea.form-control {
+    resize: vertical;
+    min-height: 100px;
+}
+
+.admin-form select.form-control {
+    height: 38px;
+}
+
+.admin-form input[type="checkbox"] {
+    width: auto;
+    margin-right: 10px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .admin-table-actions {
+        flex-direction: column;
+    }
+    
+    .admin-table-actions .btn {
+        width: 100%;
+    }
+}
+
+/* Table loading state */
+.data-table-container.loading {
+    position: relative;
+    min-height: 200px;
+}
+
+.data-table-container.loading::after {
+    content: "Loading...";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 16px;
+    color: #6c757d;
+}
+
+.data-table-container.loading table {
+    opacity: 0.5;
+}
+
+/* Table actions */
+.data-table-container .action-cell {
+    white-space: nowrap;
+    text-align: right;
+}
+
+.data-table-container .action-cell button {
+    margin-left: 5px;
+    background: none;
+    border: none;
+    color: #6c757d;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.data-table-container .action-cell button:hover {
+    color: #343a40;
+}
+
+.data-table-container .action-cell button.edit:hover {
+    color: #007bff;
+}
+
+.data-table-container .action-cell button.delete:hover {
+    color: #dc3545;
+}
+
+/* Status badges */
+.status-badge {
+    display: inline-block;
+    padding: 0.25em 0.6em;
+    font-size: 75%;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: baseline;
+    border-radius: 0.25rem;
+    text-transform: capitalize;
+}
+
+.status-new {
+    background-color: #17a2b8;
+    color: white;
+}
+
+.status-assigned {
+    background-color: #ffc107;
+    color: #212529;
+}
+
+.status-accepted {
+    background-color: #28a745;
+    color: white;
+}
+
+.status-rejected {
+    background-color: #dc3545;
+    color: white;
+}
+
+.status-settled {
+    background-color: #6c757d;
+    color: white;
+}
+
+.status-paid {
+    background-color: #007bff;
+    color: white;
+}
+
+/* JSON formatting */
+.json-formatted {
+    font-family: monospace;
+    white-space: pre-wrap;
+    max-height: 200px;
+    overflow-y: auto;
+    background-color: #f8f9fa;
+    padding: 10px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+/* Pagination */
+.pagination {
+    display: flex;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.pagination button {
+    margin: 0 5px;
+    padding: 5px 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.pagination button:hover {
+    background-color: #e9ecef;
+}
+
+.pagination button.active {
+    background-color: #007bff;
+    color: white;
+    border-color: #007bff;
+}
+
+.pagination button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

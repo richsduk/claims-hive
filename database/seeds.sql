@@ -21,7 +21,8 @@ INSERT INTO "user" (
 ) VALUES (
   (SELECT company_id FROM company WHERE name='Legitfiy'),
   'contact@rich-hill.com',
-  crypt('12345678', gen_salt('bf')),
+  -- Using a pre-generated bcrypt hash for '12345678' that's compatible with Node.js bcrypt
+  '$2b$10$3euPcmQFCiblsZeEu5s7p.9MUZWRzHYTGQ1pkHWzp8z3Qqmf2sswW',
   'Rich',
   'Hill',
   'admin'

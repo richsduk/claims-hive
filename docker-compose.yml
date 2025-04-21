@@ -4,9 +4,12 @@ services:
   web:
     build: .
     ports:
-      - "5000:80"
+      - "5000:5000"
     volumes:
-      - .:/usr/share/nginx/html
+      # Mount the application code
+      - .:/usr/src/app 
+      # Use an anonymous volume to persist node_modules installed in the container
+      - /usr/src/app/node_modules # <-- Restored this anonymous volume
     restart: unless-stopped
     depends_on:
       - db
@@ -16,6 +19,10 @@ services:
       - DB_NAME=claims_hive
       - DB_USER=claims_hive_user
       - DB_PASSWORD=claims_hive_password
+      - JWT_SECRET=claims_hive_jwt_secret_key_change_in_production
+      - JWT_EXPIRES_IN=24h
+      - PORT=5000
+      - NODE_ENV=development
 
   db:
     image: postgres:14

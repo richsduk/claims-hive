@@ -16,6 +16,12 @@ const WebSocket = require('ws');
 const app = express();
 const PORT = process.env.PORT || 5000;
 
+// Log ALL incoming requests VERY early
+app.use((req, res, next) => {
+  console.log(`>>> Incoming Request: ${req.method} ${req.originalUrl} - Headers:`, JSON.stringify(req.headers));
+  next(); // Pass control to the next middleware
+});
+
 // Import database connection
 const db = require('./database/connection');
 
@@ -24,10 +30,7 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Serve static files from the root directory
-app.use(express.static(path.join(__dirname, '..')));
-
-// API routes
+// API routes - Define API routes before static files to ensure they take precedence
 app.use('/api/auth', require('./routes/auth'));
 app.use('/api/user', require('./routes/user'));
 app.use('/api/company', require('./routes/company'));
@@ -35,21 +38,79 @@ app.use('/api/claim-type', require('./routes/claimType'));
 // Additional routes will be added as we implement them
 // app.use('/api/claim', require('./routes/claim'));
 
-// Default route for SPA
-app.get('*', (req, res) => {
-  res.sendFile(path.join(__dirname, '..', 'index.html'));
+// Serve static files from the root directory
+app.use(express.static(path.join(__dirname, '..')));
+
+// Default route for SPA - Handles client-side routing
+app.get('*', (req, res, next) => { // Added 'next' just in case, though likely not needed here
+  console.log(`[Catch-All] Request received: ${req.method} ${req.originalUrl}`);
+  
+  // Check if it looks like an API request path
+  if (req.path.startsWith('/api/')) {
+    console.log(`[Catch-All] API path detected (${req.path}). Sending 404 JSON.`);
+    // If an API path somehow reached here, it's a 404
+    return res.status(404).json({ message: `API endpoint not found: ${req.method} ${req.path}` });
+  }
+  
+  // Check if the request explicitly does NOT accept HTML
+  // If it's not an API path but doesn't want HTML, treat as 404
+  // Note: This might interfere with non-browser API clients that don't set Accept header correctly.
+  // Consider removing this check if it causes issues for valid API clients.
+  if (!req.accepts('html')) {
+     console.log(`[Catch-All] Non-HTML request detected (${req.path}, Accepts: ${req.headers.accept}). Sending 404 JSON.`);
+     return res.status(404).json({ message: 'Resource not found or invalid format requested' });
+  }
+
+  // Otherwise, serve the index.html for SPA routing
+  console.log(`[Catch-All] Serving index.html for ${req.path}`);
+  res.sendFile(path.join(__dirname, '..', 'index.html'), (err) => {
+    if (err) {
+      console.error("[Catch-All] Error sending index.html:", err);
+      // Pass error to default Express error handler if sendFile fails
+      next(err); 
+    }
+  });
 });
 
-// Create HTTP server
+// Remove the simple 404 handler as the catch-all now handles it
+// app.use((req, res, next) => {
+//   console.log(`[Final 404] Unhandled route: ${req.method} ${req.originalUrl}`);
+//   res.status(404).json({ message: `Cannot ${req.method} ${req.path}` });
+// });
+
+// Create HTTP server (ensure this is only declared once)
 const server = http.createServer(app);
 
 // Create WebSocket server
 const wss = new WebSocket.Server({ server });
 
+// Keep track of all connected clients
+const clients = new Set();
+
+// Broadcast to all clients except sender
+function broadcast(data, sender) {
+  const message = typeof data === 'string' ? data : JSON.stringify(data);
+  console.log('Broadcasting message:', message);
+  console.log('Number of connected clients:', clients.size);
+  
+  let sentCount = 0;
+  clients.forEach(client => {
+    if (client !== sender && client.readyState === WebSocket.OPEN) {
+      client.send(message);
+      sentCount++;
+    }
+  });
+  
+  console.log(`Message sent to ${sentCount} clients`);
+}
+
 // WebSocket connection handler
 wss.on('connection', (ws) => {
   console.log('WebSocket client connected');
-
+  
+  // Add client to the set
+  clients.add(ws);
+  
   // Send a welcome message
   ws.send(JSON.stringify({
     type: 'connection',
@@ -67,6 +128,12 @@ wss.on('connection', (ws) => {
         case 'ping':
           ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
           break;
+        case 'update':
+        case 'add':
+        case 'delete':
+          // Broadcast the message to all other clients
+          broadcast(data, ws);
+          break;
         // Add more message handlers here
         default:
           console.log('Unknown message type:', data.type);
@@ -79,6 +146,8 @@ wss.on('connection', (ws) => {
   // Handle disconnection
   ws.on('close', () => {
     console.log('WebSocket client disconnected');
+    // Remove client from the set
+    clients.delete(ws);
   });
 });
 

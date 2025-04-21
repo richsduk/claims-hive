@@ -1,0 +1,271 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claims Hive - Login</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="styles.css">
+    
+    <!-- Font Awesome CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <style>
+        body {
+            background-color: #f8f9fa;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+        }
+        
+        .login-container {
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+            padding: 30px;
+            width: 100%;
+            max-width: 400px;
+        }
+        
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .login-header img {
+            max-width: 200px;
+            margin-bottom: 20px;
+        }
+        
+        .login-header h1 {
+            color: #343a40;
+            font-size: 24px;
+            margin: 0;
+        }
+        
+        .login-form {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #495057;
+            font-weight: 500;
+        }
+        
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+        
+        .form-group input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        
+        .login-button {
+            background-color: #007bff;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .login-button:hover {
+            background-color: #0069d9;
+        }
+
+        .login-button:disabled {
+            background-color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        .login-footer {
+            text-align: center;
+            margin-top: 20px;
+            color: #6c757d;
+            font-size: 14px;
+        }
+        
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .error-message {
+            background-color: #f8d7da;
+            color: #721c24;
+        }
+
+        .success-message {
+            background-color: #d4edda;
+            color: #155724;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <img src="claims_hive_logo.png" alt="Claims Hive Logo">
+            <h1>Claims Hive</h1>
+        </div>
+        
+        <div id="error-message" class="message error-message">
+            Invalid email or password. Please try again.
+        </div>
+
+        <div id="success-message" class="message success-message">
+            Login successful! Redirecting...
+        </div>
+        
+        <div class="login-info" style="margin-bottom: 20px; text-align: center; color: #6c757d;">
+            <p>Use the following credentials to log in:</p>
+            <p><strong>Email:</strong> contact@rich-hill.com</p>
+            <p><strong>Password:</strong> 12345678</p>
+        </div>
+        
+        <form id="login-form" class="login-form">
+            <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" value="contact@rich-hill.com" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" value="12345678" required>
+            </div>
+            
+            <button type="submit" id="login-button" class="login-button">
+                <i class="fas fa-sign-in-alt"></i> <span id="login-text">Login</span>
+            </button>
+        </form>
+        
+        <div class="login-footer">
+            &copy; 2025 Claims Hive. All rights reserved.
+        </div>
+    </div>
+    
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Check if user is already logged in
+            const token = localStorage.getItem('claims_hive_token');
+            const user = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+            
+            // For demo purposes, if we have both token and user data, consider the user logged in
+            if (token && user.email) {
+                console.log('User already logged in:', user);
+                window.location.href = 'index.html';
+            }
+            
+            // Handle login form submission
+            const loginForm = document.getElementById('login-form');
+            const loginButton = document.getElementById('login-button');
+            const loginText = document.getElementById('login-text');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            loginForm.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // Show loading state
+                loginButton.disabled = true;
+                loginText.innerHTML = '<span class="spinner"></span> Logging in...';
+                errorMessage.style.display = 'none';
+                successMessage.style.display = 'none';
+                
+                const email = document.getElementById('email').value;
+                const password = document.getElementById('password').value;
+                
+                // Send login request to server
+                console.log('Attempting login with:', { email, password });
+                fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ email, password })
+                })
+                .then(response => {
+                    if (response.ok) {
+                        return response.json();
+                    } else {
+                        return response.json().then(err => {
+                            throw new Error(err.message || 'Invalid credentials');
+                        }).catch(() => {
+                            throw new Error(`Server error: ${response.status}`);
+                        });
+                    }
+                })
+                .then(data => {
+                    // Store token and user data in localStorage
+                    localStorage.setItem('claims_hive_token', data.token);
+                    localStorage.setItem('claims_hive_user', JSON.stringify(data.user));
+                    
+                    // Show success message
+                    successMessage.style.display = 'block';
+                    
+                    // Redirect to main page after a short delay
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1500);
+                })
+                .catch(error => {
+                    console.error('Login error:', error);
+                    errorMessage.textContent = error.message || 'Invalid email or password. Please try again.';
+                    errorMessage.style.display = 'block';
+                    
+                    // Reset button state
+                    loginButton.disabled = false;
+                    loginText.innerHTML = 'Login';
+                });
+            });
+        });
+    </script>
+</body>
+</html>

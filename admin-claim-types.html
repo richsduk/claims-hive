@@ -1,0 +1,402 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Claim Types - Claims Hive</title>
+    
+    <!-- Favicon -->
+    <link rel="apple-touch-icon" sizes="180x180" href="favicon/apple-touch-icon.png">
+    <link rel="icon" type="image/png" sizes="32x32" href="favicon/favicon-32x32.png">
+    <link rel="icon" type="image/png" sizes="16x16" href="favicon/favicon-16x16.png">
+    <link rel="manifest" href="favicon/site.webmanifest">
+    <link rel="shortcut icon" href="favicon/favicon.ico">
+
+    <!-- Link CSS -->
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="components/layout.css">
+    <link rel="stylesheet" href="components/DataTable/dataTable.css">
+    <link rel="stylesheet" href="admin-table.css">
+    
+    <!-- Font Awesome CDN (for icons) -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div id="data-table-container"></div>
+    
+    <script type="module">
+        // Check if user is logged in
+        const token = localStorage.getItem('claims_hive_token');
+        const user = JSON.parse(localStorage.getItem('claims_hive_user') || '{}');
+        
+        // If no token, redirect to login page
+        if (!token) {
+            window.location.href = 'login.html';
+            return; // Stop execution
+        }
+        
+        // Verify token with the server
+        fetch('/api/auth/me', {
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }
+        })
+        .then(response => {
+            if (!response.ok) {
+                // Token is invalid, clear it and redirect to login
+                localStorage.removeItem('claims_hive_token');
+                localStorage.removeItem('claims_hive_user');
+                window.location.href = 'login.html';
+                throw new Error('Invalid token');
+            }
+            return response.json();
+        })
+        .then(userData => {
+            console.log('User verified:', userData);
+            // Update user data in localStorage
+            localStorage.setItem('claims_hive_user', JSON.stringify(userData));
+        })
+        .catch(error => {
+            console.error('Error verifying token:', error);
+        });
+        
+        import Layout from './components/layout.js';
+        import AdminTable from './admin-table.js';
+        import Modal from './components/Modal/Modal.js';
+        
+        // Create layout
+        const layout = new Layout({
+            title: 'Claims Hive',
+            activeMenuItem: 'menu-claim-types',
+            isAdminMode: true
+        });
+        
+        // Add content header
+        layout.addContentHeader('Claim Types', [
+            {
+                targetMenuId: 'menu-companies',
+                icon: 'fa-solid fa-briefcase',
+                text: 'Companies'
+            },
+            {
+                targetMenuId: 'menu-users',
+                icon: 'fa-solid fa-user-shield',
+                text: 'Users'
+            },
+            {
+                targetMenuId: 'menu-roles',
+                icon: 'fa-solid fa-user-tag',
+                text: 'Roles'
+            }
+        ]);
+        
+        // Define columns
+        const columns = [
+            {
+                field: 'claim_type_id',
+                title: 'ID',
+                type: 'number',
+                sortable: true,
+                editable: false
+            },
+            {
+                field: 'name',
+                title: 'Name',
+                type: 'text',
+                sortable: true
+            },
+            {
+                field: 'schema_json',
+                title: 'Schema',
+                type: 'json',
+                sortable: false,
+                render: (value) => {
+                    // Format JSON for display
+                    try {
+                        const formatted = JSON.stringify(value, null, 2);
+                        return `<div class="json-formatted">${formatted}</div>`;
+                    } catch (e) {
+                        return `<div class="json-formatted error">${value}</div>`;
+                    }
+                }
+            },
+            {
+                field: 'created',
+                title: 'Created',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                field: 'updated',
+                title: 'Updated',
+                type: 'date',
+                sortable: true,
+                editable: false,
+                formatOptions: {
+                    format: 'medium'
+                }
+            },
+            {
+                actions: [
+                    {
+                        icon: 'fas fa-edit',
+                        title: 'Edit',
+                        class: 'edit',
+                        onClick: (rowData) => showEditModal(rowData)
+                    },
+                    {
+                        icon: 'fas fa-trash',
+                        title: 'Delete',
+                        class: 'delete',
+                        onClick: (rowData) => confirmDelete(rowData)
+                    },
+                    {
+                        icon: 'fas fa-eye',
+                        title: 'View Claims',
+                        class: 'view',
+                        onClick: (rowData) => viewClaims(rowData)
+                    }
+                ]
+            }
+        ];
+        
+        // Initialize admin table
+        const adminTable = new AdminTable({
+            tableName: 'claim_type',
+            title: 'Claim Type',
+            columns: columns,
+            containerId: 'data-table-container',
+            apiEndpoint: '/api/claim-type'
+        });
+        
+        // Custom edit modal for claim types (with JSON editor)
+        function showEditModal(rowData = null) {
+            const isEdit = rowData !== null;
+            const title = isEdit ? `Edit Claim Type` : `Add New Claim Type`;
+            
+            // Create form content
+            const formContent = document.createElement('div');
+            formContent.className = 'admin-form';
+            
+            // Default schema template for new claim types
+            const defaultSchema = {
+                "$schema": "http://json-schema.org/draft-07/schema#",
+                "type": "object",
+                "required": ["claimant_name", "incident_date"],
+                "properties": {
+                    "claimant_name": {
+                        "type": "string",
+                        "description": "Full name of the claimant"
+                    },
+                    "incident_date": {
+                        "type": "string",
+                        "format": "date",
+                        "description": "Date when the incident occurred"
+                    },
+                    "description": {
+                        "type": "string",
+                        "description": "Description of the claim"
+                    }
+                }
+            };
+            
+            const schemaValue = isEdit ? 
+                JSON.stringify(rowData.schema_json, null, 2) : 
+                JSON.stringify(defaultSchema, null, 2);
+            
+            formContent.innerHTML = `
+                <div class="form-group">
+                    <label for="name">Name:</label>
+                    <input type="text" id="name" name="name" value="${isEdit ? rowData.name : ''}" class="form-control">
+                </div>
+                <div class="form-group">
+                    <label for="schema_json">Schema JSON:</label>
+                    <textarea id="schema_json" name="schema_json" class="form-control" rows="15">${schemaValue}</textarea>
+                </div>
+            `;
+            
+            // Create modal
+            const modal = new Modal({
+                title: title,
+                content: formContent,
+                size: 'large',
+                confirmText: 'Save',
+                cancelText: 'Cancel',
+                onConfirm: () => saveClaimType(isEdit, rowData)
+            });
+            
+            modal.open();
+        }
+        
+        // Save claim type
+        async function saveClaimType(isEdit, originalData) {
+            try {
+                // Get form values
+                const name = document.getElementById('name').value;
+                const schemaJsonStr = document.getElementById('schema_json').value;
+                
+                // Validate JSON
+                let schema_json;
+                try {
+                    schema_json = JSON.parse(schemaJsonStr);
+                } catch (e) {
+                    Modal.alert('Invalid JSON schema. Please check your syntax.', 'Error');
+                    return false;
+                }
+                
+                // Prepare data
+                const data = { name, schema_json };
+                
+                // Determine API endpoint and method
+                let url = '/api/claim-type';
+                let method = 'POST';
+                
+                if (isEdit) {
+                    url = `${url}/${originalData.claim_type_id}`;
+                    method = 'PUT';
+                }
+                
+                // Send request
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to save claim type: ${response.status} ${response.statusText}`);
+                }
+                
+                // Refresh data
+                adminTable.refreshData();
+                
+                return true;
+            } catch (error) {
+                console.error('Error saving claim type:', error);
+                Modal.alert('Failed to save claim type. Please try again later.', 'Error');
+                return false;
+            }
+        }
+        
+        // Confirm delete
+        function confirmDelete(rowData) {
+            Modal.confirm(
+                `Are you sure you want to delete the claim type "${rowData.name}"?`,
+                'Confirm Delete',
+                () => deleteClaimType(rowData),
+                () => {}
+            );
+        }
+        
+        // Delete claim type
+        async function deleteClaimType(rowData) {
+            try {
+                const response = await fetch(`/api/claim-type/${rowData.claim_type_id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to delete claim type: ${response.status} ${response.statusText}`);
+                }
+                
+                // Refresh data
+                adminTable.refreshData();
+                
+                return true;
+            } catch (error) {
+                console.error('Error deleting claim type:', error);
+                Modal.alert('Failed to delete claim type. Please try again later.', 'Error');
+                return false;
+            }
+        }
+        
+        // View claims for a claim type
+        async function viewClaims(rowData) {
+            try {
+                const response = await fetch(`/api/claim-type/${rowData.claim_type_id}/claims`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`Failed to fetch claims: ${response.status} ${response.statusText}`);
+                }
+                
+                const claims = await response.json();
+                
+                // Create claims table
+                const claimsContent = document.createElement('div');
+                claimsContent.className = 'claims-list';
+                
+                if (claims.length === 0) {
+                    claimsContent.innerHTML = `<p>No claims found for this claim type.</p>`;
+                } else {
+                    let claimsHtml = `
+                        <table class="data-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Claimant</th>
+                                    <th>Status</th>
+                                    <th>Affiliate</th>
+                                    <th>Buyer</th>
+                                    <th>Date Added</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                    `;
+                    
+                    claims.forEach(claim => {
+                        claimsHtml += `
+                            <tr>
+                                <td>${claim.claim_id}</td>
+                                <td>${claim.claimant_first} ${claim.claimant_last}</td>
+                                <td><span class="status-badge status-${claim.status}">${claim.status}</span></td>
+                                <td>${claim.affiliate_name}</td>
+                                <td>${claim.buyer_name || '-'}</td>
+                                <td>${new Date(claim.created).toLocaleString()}</td>
+                            </tr>
+                        `;
+                    });
+                    
+                    claimsHtml += `
+                            </tbody>
+                        </table>
+                    `;
+                    
+                    claimsContent.innerHTML = claimsHtml;
+                }
+                
+                // Show modal with claims
+                const modal = new Modal({
+                    title: `Claims for ${rowData.name}`,
+                    content: claimsContent,
+                    size: 'large',
+                    confirmText: 'Close',
+                    showCancel: false
+                });
+                
+                modal.open();
+            } catch (error) {
+                console.error('Error fetching claims:', error);
+                Modal.alert('Failed to fetch claims. Please try again later.', 'Error');
+            }
+        }
+    </script>
+</body>
+</html>

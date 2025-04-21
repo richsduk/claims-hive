@@ -86,7 +86,7 @@ export default class Modal {
         this.modalElement.setAttribute('role', 'dialog');
         this.modalElement.setAttribute('aria-modal', 'true');
         this.modalElement.setAttribute('aria-labelledby', `${this.options.id}-title`);
-        this.modalElement.setAttribute('aria-hidden', 'true');
+        this.modalElement.setAttribute('inert', '');
         
         // Create backdrop
         if (this.options.backdrop) {
@@ -357,7 +357,7 @@ export default class Modal {
         
         // Show modal
         this.modalElement.classList.add('modal-show');
-        this.modalElement.setAttribute('aria-hidden', 'false');
+        this.modalElement.removeAttribute('inert');
         
         // Add ESC key event listener
         if (this.options.escClosable) {
@@ -384,7 +384,7 @@ export default class Modal {
         
         // Hide modal
         this.modalElement.classList.remove('modal-show');
-        this.modalElement.setAttribute('aria-hidden', 'true');
+        this.modalElement.setAttribute('inert', '');
         
         // Remove ESC key event listener
         if (this.options.escClosable) {
@@ -553,7 +553,7 @@ export default class Modal {
         const content = document.createElement('div');
         content.innerHTML = `
             <p>${message}</p>
-            <input type="text" class="modal-prompt-input" value="${defaultValue}">
+            <input type="text" class="modal-prompt-input" value="${defaultValue}" autocomplete="off">
         `;
         
         const modal = new Modal({
