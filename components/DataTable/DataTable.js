@@ -291,32 +291,80 @@ class DataTable {
      * @param {string} idField - Field to use as ID (default: 'id')
      */
     removeRow(id, idField = 'id') {
-        // First try with the provided ID field
-        let index = this.options.data.findIndex(item => item[idField] === id);
+        // Convert id to number if it's a numeric string
+        const numericId = !isNaN(id) ? Number(id) : id;
+        const stringId = String(numericId);
         
-        // If not found and using default 'id' field, try alternative ID fields
-        if (index === -1 && idField === 'id') {
-            console.log(`Row with id=${id} not found, trying alternative ID fields`);
+        console.log(`Attempting to remove row with ${idField}=${numericId} (${typeof numericId})`);
+        console.log('Current data:', this.options.data);
+        
+        // First try with the provided ID field
+        let index = -1;
+        
+        // Loop through data to find the matching row with detailed logging
+        for (let i = 0; i < this.options.data.length; i++) {
+            const item = this.options.data[i];
+            const itemId = item[idField];
+            
+            console.log(`Comparing item[${i}][${idField}]=${itemId} (${typeof itemId}) with ${numericId} (${typeof numericId})`);
+            
+            // Try different comparison methods
+            if (itemId === numericId || itemId === stringId || 
+                Number(itemId) === numericId || String(itemId) === stringId) {
+                index = i;
+                console.log(`Match found at index ${index}`);
+                break;
+            }
+        }
+        
+        // If not found with the provided ID field, try alternative ID fields
+        if (index === -1) {
+            console.log(`Row with ${idField}=${numericId} not found, trying alternative ID fields`);
             const possibleIdFields = ['company_id', 'user_id', 'claim_type_id', 'role_id'];
             
             for (const altIdField of possibleIdFields) {
-                index = this.options.data.findIndex(item => item[altIdField] === id);
-                if (index !== -1) {
-                    console.log(`Found row with ${altIdField}=${id}`);
-                    idField = altIdField;
-                    break;
+                // Skip if it's the same as the provided idField
+                if (altIdField === idField) continue;
+                
+                for (let i = 0; i < this.options.data.length; i++) {
+                    const item = this.options.data[i];
+                    const itemId = item[altIdField];
+                    
+                    if (itemId === undefined) continue;
+                    
+                    console.log(`Comparing item[${i}][${altIdField}]=${itemId} (${typeof itemId}) with ${numericId} (${typeof numericId})`);
+                    
+                    // Try different comparison methods
+                    if (itemId === numericId || itemId === stringId || 
+                        Number(itemId) === numericId || String(itemId) === stringId) {
+                        index = i;
+                        console.log(`Match found at index ${index} with alternative field ${altIdField}`);
+                        idField = altIdField;
+                        break;
+                    }
                 }
+                
+                if (index !== -1) break;
             }
         }
         
         if (index !== -1) {
-            console.log(`Removing row at index ${index} with ${idField}=${id}`);
+            console.log(`Removing row at index ${index} with ${idField}=${numericId}`);
             this.options.data.splice(index, 1);
-            this.state.selectedRows.delete(id);
+            this.state.selectedRows.delete(numericId);
             this.updateVisibleData();
             this.render();
+            
+            // Notify that the row was successfully removed
+            console.log(`Row with ${idField}=${numericId} successfully removed`);
         } else {
-            console.warn(`Row with ${idField}=${id} not found for removal`);
+            console.warn(`Row with ${idField}=${numericId} not found for removal. Current data:`, this.options.data);
+            
+            // Force a refresh of the data from the server
+            if (typeof this.options.onRefresh === 'function') {
+                console.log('Forcing data refresh from server');
+                this.options.onRefresh();
+            }
         }
     }
     
@@ -950,23 +998,65 @@ class DataTable {
             
             this.ws.onmessage = (event) => {
                 try {
+                    console.log('===== WEBSOCKET MESSAGE RECEIVED =====');
+                    console.log('Raw message data:', event.data);
+                    
                     const message = JSON.parse(event.data);
+                    console.log('Parsed message:', message);
+                    console.log('This client ID:', this.clientId);
                     
                     // Call message callback if provided
                     if (typeof this.options.websocket.onMessage === 'function') {
                         this.options.websocket.onMessage(message);
                     }
                     
-                    // Handle different message types
+                    // Check if this is a message we sent ourselves
+                    const isSelfMessage = message.clientId === this.clientId && 
+                                         this.sentMessageIds && 
+                                         this.sentMessageIds.has(message.messageId);
+                    
+                    // Log whether this is a self-message or not
+                    if (isSelfMessage) {
+                        console.log('SELF MESSAGE: Received our own message, processing anyway:', message);
+                    } else {
+                        console.log('EXTERNAL MESSAGE: Received message from another client:', message);
+                    }
+                    
+                    // Handle different message types - process ALL messages, even our own
                     if (message.type === 'update' && message.data) {
+                        console.log('Processing UPDATE message');
                         this.handleWebSocketUpdate(message.data);
-                    } else if (message.type === 'delete' && message.id) {
-                        this.removeRow(message.id);
+                    } else if (message.type === 'delete') {
+                        console.log('Processing DELETE message');
+                        // Handle delete message with improved support for soft delete
+                        if (message.isSoftDelete) {
+                            console.log('Handling soft delete message:', message);
+                            
+                            const idField = message.idField || 'id';
+                            const id = message.id;
+                            
+                            console.log(`Current data before removal (${this.options.data.length} items):`, 
+                                this.options.data.map(item => `${item[idField]}`).join(', '));
+                            
+                            // Always try to remove the row, regardless of whether we sent the message
+                            console.log(`Attempting to remove row with ${idField}=${id}`);
+                            this.removeRow(id, idField);
+                            
+                            console.log(`Data after removal attempt (${this.options.data.length} items):`, 
+                                this.options.data.map(item => `${item[idField]}`).join(', '));
+                        } else {
+                            // For hard delete, just remove the row
+                            console.log('Processing hard delete for ID:', message.id);
+                            this.removeRow(message.id);
+                        }
                     } else if (message.type === 'add' && message.data) {
+                        console.log('Processing ADD message');
                         this.addRow(message.data);
                     } else if (message.type === 'refresh') {
+                        console.log('Processing REFRESH message');
                         this.updateData(message.data || []);
                     }
+                    console.log('===== END WEBSOCKET MESSAGE PROCESSING =====');
                 } catch (error) {
                     console.error('Error processing WebSocket message:', error);
                 }
@@ -1071,7 +1161,28 @@ class DataTable {
         }
         
         try {
-            this.ws.send(JSON.stringify(message));
+            // Add a unique message ID and client ID to track messages
+            const enhancedMessage = {
+                ...message,
+                messageId: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+                clientId: this.clientId || (this.clientId = `client-${Math.random().toString(36).substr(2, 9)}`)
+            };
+            
+            // Store sent message IDs to avoid processing our own messages that come back
+            if (!this.sentMessageIds) {
+                this.sentMessageIds = new Set();
+            }
+            this.sentMessageIds.add(enhancedMessage.messageId);
+            
+            // Clean up old message IDs after 10 seconds
+            setTimeout(() => {
+                if (this.sentMessageIds) {
+                    this.sentMessageIds.delete(enhancedMessage.messageId);
+                }
+            }, 10000);
+            
+            console.log('Sending WebSocket message:', enhancedMessage);
+            this.ws.send(JSON.stringify(enhancedMessage));
             return true;
         } catch (error) {
             console.error('Error sending WebSocket message:', error);

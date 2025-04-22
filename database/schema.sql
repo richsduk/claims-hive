@@ -37,8 +37,12 @@ CREATE TABLE company (
   name         TEXT           NOT NULL,
   type         company_type   NOT NULL,
   created      TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated      TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated      TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at   TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_company_deleted_at ON company(deleted_at);
 
 -- User table
 CREATE TABLE "user" (
@@ -50,8 +54,12 @@ CREATE TABLE "user" (
   last          TEXT           NOT NULL,
   role          user_role      NOT NULL,
   created       TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated       TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated       TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at    TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_user_deleted_at ON "user"(deleted_at);
 
 -- Raw data table
 CREATE TABLE raw_data (
@@ -68,8 +76,12 @@ CREATE TABLE raw_data (
   utm_term           TEXT,
   submitted_at       TIMESTAMPTZ,
   created            TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated            TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated            TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at         TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_raw_data_deleted_at ON raw_data(deleted_at);
 
 -- Claimant table
 CREATE TABLE claimant (
@@ -81,8 +93,12 @@ CREATE TABLE claimant (
   preferred_channel  preferred_channel,
   first_submitted_at TIMESTAMPTZ,
   created            TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated            TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated            TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at         TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_claimant_deleted_at ON claimant(deleted_at);
 
 -- Claim type table
 CREATE TABLE claim_type (
@@ -90,8 +106,12 @@ CREATE TABLE claim_type (
   name            TEXT           NOT NULL UNIQUE,
   schema_json     JSONB          NOT NULL,
   created         TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated         TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated         TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at      TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_claim_type_deleted_at ON claim_type(deleted_at);
 
 -- Claim table
 CREATE TABLE claim (
@@ -104,8 +124,12 @@ CREATE TABLE claim (
   status          claim_status   NOT NULL DEFAULT 'new',
   claim_data      JSONB          NOT NULL,
   created         TIMESTAMPTZ    NOT NULL DEFAULT now(),
-  updated         TIMESTAMPTZ    NOT NULL DEFAULT now()
+  updated         TIMESTAMPTZ    NOT NULL DEFAULT now(),
+  deleted_at      TIMESTAMPTZ    DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_claim_deleted_at ON claim(deleted_at);
 
 -- Reject table
 CREATE TABLE reject (
@@ -132,8 +156,12 @@ CREATE TABLE role (
   role_id   BIGSERIAL     PRIMARY KEY,
   name      TEXT          NOT NULL UNIQUE,
   created   TIMESTAMPTZ   NOT NULL DEFAULT now(),
-  updated   TIMESTAMPTZ   NOT NULL DEFAULT now()
+  updated   TIMESTAMPTZ   NOT NULL DEFAULT now(),
+  deleted_at TIMESTAMPTZ  DEFAULT NULL
 );
+
+-- Index for soft delete
+CREATE INDEX idx_role_deleted_at ON role(deleted_at);
 
 -- Role permission table
 CREATE TABLE role_permission (

@@ -179,6 +179,7 @@ export default class AdminTable {
             sortColumn: columns[0].field,
             sortDirection: 'asc',
             onRowClick: (rowData) => this.showAddEditModal(rowData),
+            onRefresh: () => this.refreshData(),
             websocket: {
                 enabled: true,
                 url: `ws://${window.location.host}/ws`,
@@ -401,10 +402,7 @@ export default class AdminTable {
             // Get the response data
             const responseData = await response.json();
             
-            // Refresh data
-            await this.refreshData();
-            
-            // If the dataTable has a WebSocket connection, send a message to update other clients
+            // If the dataTable has a WebSocket connection, send a message to update all clients (including this one)
             if (this.dataTable && this.dataTable.options.websocket && this.dataTable.options.websocket.enabled) {
                 try {
                     const updateMessage = {
@@ -412,17 +410,8 @@ export default class AdminTable {
                         data: responseData
                     };
                     
-                    // Also update the local data table directly
-                    console.log('Applying update locally:', updateMessage);
-                    if (isEdit) {
-                        const idField = this.getIdFieldName();
-                        const id = responseData[idField];
-                        this.dataTable.updateRow(id, responseData, idField);
-                    } else {
-                        this.dataTable.addRow(responseData);
-                    }
-                    
-                    // Send the message to other clients
+                    // Send the message to all clients (including this one)
+                    console.log('Sending websocket message for', isEdit ? 'update' : 'add');
                     this.dataTable.sendMessage(updateMessage);
                 } catch (wsError) {
                     console.warn('WebSocket message not sent:', wsError);
@@ -481,15 +470,21 @@ export default class AdminTable {
      */
     async deleteData(rowData) {
         try {
+            console.log('===== DELETE OPERATION STARTED =====');
+            console.log('Row data to delete:', rowData);
+            
             // Get the ID field name
             const idField = this.getIdFieldName();
             const id = rowData[idField];
+            
+            console.log(`Using ID field: ${idField}, ID value: ${id}`);
             
             if (!id) {
                 throw new Error('No ID found for delete operation');
             }
             
             // Send request
+            console.log(`Sending DELETE request to ${this.options.apiEndpoint}/${id}`);
             const response = await fetch(`${this.options.apiEndpoint}/${id}`, {
                 method: 'DELETE',
                 headers: {
@@ -498,32 +493,80 @@ export default class AdminTable {
                 }
             });
             
+            console.log('DELETE response status:', response.status);
+            
             if (!response.ok) {
                 throw new Error(`Failed to delete data: ${response.status} ${response.statusText}`);
             }
             
-            // Refresh data
-            await this.refreshData();
+            // Get the response data (for soft delete, this will include the deleted item)
+            const responseData = await response.json();
+            console.log('DELETE response data:', responseData);
             
-            // If the dataTable has a WebSocket connection, send a message to update other clients
+            // Show success message to the user
+            this.showSuccess(`${this.options.title} deleted successfully`);
+            
+            // If the dataTable has a WebSocket connection, send a message to update all clients (including this one)
             if (this.dataTable && this.dataTable.options.websocket && this.dataTable.options.websocket.enabled) {
                 try {
+                    console.log('Preparing WebSocket delete message');
+                    // For soft delete, we need to remove the row from the table
+                    // but we're not actually deleting it from the database
                     const deleteMessage = {
                         type: 'delete',
-                        id: id
+                        id: id,
+                        idField: idField,
+                        isSoftDelete: true,
+                        data: responseData,
+                        timestamp: Date.now() // Add timestamp for debugging
                     };
-                    this.dataTable.sendMessage(deleteMessage);
+                    
+                    console.log('WebSocket delete message:', deleteMessage);
+                    
+                    // First, manually remove the row from the local data table
+                    console.log('Manually removing row from local data table');
+                    if (this.dataTable.removeRow) {
+                        this.dataTable.removeRow(id, idField);
+                    }
+                    
+                    // Send the message to all clients (including this one)
+                    const sendResult = this.dataTable.sendMessage(deleteMessage);
+                    console.log('WebSocket message send result:', sendResult ? 'SUCCESS' : 'FAILED');
+                    console.log('Sent delete websocket message for ID:', id);
                 } catch (wsError) {
                     console.warn('WebSocket message not sent:', wsError);
+                    console.error('WebSocket error details:', wsError);
+                }
+            } else {
+                console.log('WebSocket not available or not enabled');
+                if (!this.dataTable) {
+                    console.log('dataTable is not initialized');
+                } else if (!this.dataTable.options.websocket) {
+                    console.log('websocket options not configured');
+                } else if (!this.dataTable.options.websocket.enabled) {
+                    console.log('websocket is not enabled');
                 }
             }
             
+            // Refresh data after sending the websocket message
+            console.log('Refreshing data after delete');
+            await this.refreshData();
+            
+            console.log('===== DELETE OPERATION COMPLETED =====');
             return true;
         } catch (error) {
             console.error('Error deleting data:', error);
             this.showError('Failed to delete data. Please try again later.');
             return false;
         }
+    }
+    
+    /**
+     * Show success message
+     * @param {string} message - The success message
+     */
+    showSuccess(message) {
+        Modal.alert(message, 'Success');
     }
     
     /**

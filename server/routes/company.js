@@ -10,7 +10,7 @@ const { authenticate, isAdmin, isAdminCompany, isSameCompany } = require('../mid
 
 /**
  * @route GET /api/company
- * @desc Get all companies
+ * @desc Get all active companies
  * @access Private
  */
 router.get('/', authenticate, async (req, res) => {
@@ -29,6 +29,36 @@ router.get('/', authenticate, async (req, res) => {
     res.json(companies);
   } catch (err) {
     console.error('Get all companies error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route GET /api/company/all
+ * @desc Get all companies including deleted ones
+ * @access Private/Admin
+ */
+router.get('/all', authenticate, isAdmin, async (req, res) => {
+  try {
+    const companies = await Company.getAllWithDeleted();
+    res.json(companies);
+  } catch (err) {
+    console.error('Get all companies with deleted error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route GET /api/company/deleted
+ * @desc Get all deleted companies
+ * @access Private/Admin
+ */
+router.get('/deleted', authenticate, isAdmin, async (req, res) => {
+  try {
+    const companies = await Company.getDeleted();
+    res.json(companies);
+  } catch (err) {
+    console.error('Get deleted companies error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });
@@ -135,7 +165,7 @@ router.put('/:companyId', authenticate, isAdmin, async (req, res) => {
 
 /**
  * @route DELETE /api/company/:companyId
- * @desc Delete a company
+ * @desc Soft delete a company
  * @access Private/Admin
  */
 router.delete('/:companyId', authenticate, isAdmin, async (req, res) => {
@@ -158,12 +188,87 @@ router.delete('/:companyId', authenticate, isAdmin, async (req, res) => {
       return res.status(400).json({ message: 'Cannot delete your own company' });
     }
     
-    // Delete company
-    await Company.remove(companyId);
+    // Soft delete company
+    const deletedCompany = await Company.remove(companyId);
     
-    res.json({ message: 'Company deleted successfully' });
+    res.json({ 
+      message: 'Company marked as deleted successfully',
+      company: deletedCompany
+    });
   } catch (err) {
     console.error('Delete company error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route POST /api/company/:companyId/restore
+ * @desc Restore a previously deleted company
+ * @access Private/Admin
+ */
+router.post('/:companyId/restore', authenticate, isAdmin, async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.companyId);
+    
+    if (isNaN(companyId)) {
+      return res.status(400).json({ message: 'Invalid company ID' });
+    }
+    
+    // Check if company exists and is deleted
+    const existingCompany = await Company.getByIdWithDeleted(companyId);
+    
+    if (!existingCompany) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    
+    if (existingCompany.deleted_at === null) {
+      return res.status(400).json({ message: 'Company is not deleted' });
+    }
+    
+    // Restore company
+    const restoredCompany = await Company.restore(companyId);
+    
+    res.json({ 
+      message: 'Company restored successfully',
+      company: restoredCompany
+    });
+  } catch (err) {
+    console.error('Restore company error:', err);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
+/**
+ * @route DELETE /api/company/:companyId/permanent
+ * @desc Permanently delete a company (hard delete)
+ * @access Private/Admin
+ */
+router.delete('/:companyId/permanent', authenticate, isAdmin, async (req, res) => {
+  try {
+    const companyId = parseInt(req.params.companyId);
+    
+    if (isNaN(companyId)) {
+      return res.status(400).json({ message: 'Invalid company ID' });
+    }
+    
+    // Check if company exists
+    const existingCompany = await Company.getByIdWithDeleted(companyId);
+    
+    if (!existingCompany) {
+      return res.status(404).json({ message: 'Company not found' });
+    }
+    
+    // Prevent deleting own company
+    if (companyId === req.user.company_id) {
+      return res.status(400).json({ message: 'Cannot delete your own company' });
+    }
+    
+    // Hard delete company
+    await Company.hardDelete(companyId);
+    
+    res.json({ message: 'Company permanently deleted' });
+  } catch (err) {
+    console.error('Permanent delete company error:', err);
     res.status(500).json({ message: 'Server error' });
   }
 });

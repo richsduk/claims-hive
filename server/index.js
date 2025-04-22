@@ -87,15 +87,17 @@ const wss = new WebSocket.Server({ server });
 // Keep track of all connected clients
 const clients = new Set();
 
-// Broadcast to all clients except sender
+// Broadcast to all clients including sender
 function broadcast(data, sender) {
   const message = typeof data === 'string' ? data : JSON.stringify(data);
   console.log('Broadcasting message:', message);
   console.log('Number of connected clients:', clients.size);
+  console.log('Sender client ID:', sender ? sender.clientId : 'unknown');
   
   let sentCount = 0;
   clients.forEach(client => {
-    if (client !== sender && client.readyState === WebSocket.OPEN) {
+    if (client.readyState === WebSocket.OPEN) {
+      console.log(`Sending message to client ${client === sender ? '(SENDER)' : ''}`);
       client.send(message);
       sentCount++;
     }
@@ -131,7 +133,7 @@ wss.on('connection', (ws) => {
         case 'update':
         case 'add':
         case 'delete':
-          // Broadcast the message to all other clients
+          // Broadcast the message to all clients (including the sender)
           broadcast(data, ws);
           break;
         // Add more message handlers here
