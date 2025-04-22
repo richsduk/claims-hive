@@ -40,7 +40,7 @@ body {
     padding: 0 20px;
     position: sticky;
     top: 0;
-    z-index: 1000;
+    z-index: 9999; /* Increased z-index to ensure it's above other elements */
 }
 
 .menu-toggle {
@@ -85,11 +85,12 @@ body {
     color: #343a40;
 }
 
-.user-profile {
+/* User info in header */
+.user-info {
     display: flex;
     align-items: center;
-    cursor: pointer;
-    position: relative;
+    padding: 5px 10px;
+    margin-right: 10px;
 }
 
 .avatar {
@@ -105,26 +106,69 @@ body {
     margin-right: 10px;
 }
 
-.user-profile span:nth-child(2) {
-    margin-right: 5px;
+/* Header actions */
+.header-actions {
+    display: flex;
+    gap: 8px;
+    position: relative;
+    z-index: 2000; /* Ensure it's above other elements */
 }
 
-/* User dropdown menu */
-.user-dropdown {
-    position: absolute;
-    top: 100%;
-    right: 0;
-    background-color: #fff;
+/* Make sure buttons are clearly clickable */
+.header-actions button {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Responsive adjustments for header */
+@media (max-width: 768px) {
+    .user-info span:nth-child(2) {
+        display: none; /* Hide name on mobile */
+    }
+    
+    .header-actions {
+        gap: 4px;
+    }
+    
+    .header-actions .btn {
+        padding: 5px;
+    }
+}
+
+/* Logout link */
+.logout-link {
+    margin-left: 10px;
+    padding: 5px 10px;
     border-radius: 4px;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
-    width: 200px;
-    z-index: 1000;
-    display: none;
-    margin-top: 5px;
+    font-size: 14px;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    color: #fff;
+    background-color: var(--secondary-color);
+    text-decoration: none;
+    transition: background-color 0.2s;
 }
 
-.user-profile.active .user-dropdown {
-    display: block;
+.logout-link:hover {
+    background-color: #5a6268;
+    text-decoration: none;
+    color: #fff;
+}
+
+.logout-link i {
+    font-size: 16px;
+}
+
+@media (max-width: 768px) {
+    .logout-link span {
+        display: none;
+    }
+    
+    .logout-link {
+        padding: 5px;
+        min-width: 36px;
+    }
 }
 
 .user-dropdown ul {

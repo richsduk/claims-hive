@@ -132,7 +132,7 @@
         /* Toast notification */
         .toast {
             position: fixed;
-            top: 20px;
+            top: 80px; /* Moved below the header (60px header height + 20px margin) */
             right: 20px;
             background-color: #fff;
             border-radius: 4px;
@@ -141,7 +141,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            z-index: 9999;
+            z-index: 1000; /* Lower z-index than header */
             opacity: 0;
             transform: translateY(-20px);
             transition: opacity 0.3s, transform 0.3s;
@@ -209,7 +209,9 @@
     </style>
 </head>
 <body>
-    <!-- Toast notification container -->
+    <!-- Content will be placed inside the layout -->
+    
+    <!-- Toast notification container (moved below the header) -->
     <div id="toast" class="toast">
         <div class="toast-icon">
             <i class="fas fa-check-circle"></i>
@@ -220,8 +222,6 @@
         </div>
         <button class="toast-close">&times;</button>
     </div>
-
-    <!-- Content will be placed inside the layout -->
     <div id="home-content">
         <div class="component-cards">
             <div class="component-card">

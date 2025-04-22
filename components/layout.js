@@ -95,49 +95,188 @@ export default class Layout {
             <button class="menu-toggle" id="menuToggle">
                 <i class="fa-solid fa-bars"></i>
             </button>
-            <div class="user-profile" id="userProfileDropdown">
+            <div class="user-info">
                 <span class="avatar">${initials}</span>
                 <span>${fullName}</span>
-                <i class="fa-solid fa-caret-down"></i>
-                <div class="user-dropdown">
-                    <ul>
-                        <li><a href="#" id="profileLink"><i class="fa-solid fa-user"></i> Profile</a></li>
-                        <li><a href="#" id="settingsLink"><i class="fa-solid fa-gear"></i> Settings</a></li>
-                        <li class="divider"></li>
-                        <li><a href="#" id="logoutLink"><i class="fa-solid fa-sign-out-alt"></i> Logout</a></li>
-                    </ul>
-                </div>
+            </div>
+            <div class="header-actions">
+                <button id="profileBtn" class="btn btn-secondary">
+                    <i class="fa-solid fa-user"></i>
+                    <span>Profile</span>
+                </button>
+                <button id="settingsBtn" class="btn btn-secondary">
+                    <i class="fa-solid fa-gear"></i>
+                    <span>Settings</span>
+                </button>
+                <button id="logoutBtn" class="btn btn-danger">
+                    <i class="fa-solid fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </button>
             </div>
         `;
         
         document.body.prepend(header);
         
-        // Add event listener for logout
-        const logoutLink = header.querySelector('#logoutLink');
-        if (logoutLink) {
-            logoutLink.addEventListener('click', (e) => {
-                e.preventDefault();
+        // Add event listener for logout button
+        const logoutBtn = header.querySelector('#logoutBtn');
+        if (logoutBtn) {
+            console.log('DEBUG: Found logout button, adding click event');
+            logoutBtn.addEventListener('click', (e) => {
+                console.log('DEBUG: Logout button clicked');
                 // Clear localStorage
                 localStorage.removeItem('claims_hive_token');
                 localStorage.removeItem('claims_hive_user');
-                // Redirect to login page
+                // Redirect to login page - force full page navigation
+                console.log('DEBUG: Redirecting to login.html');
                 window.location.href = 'login.html';
             });
+        } else {
+            console.error('DEBUG: Logout button not found!');
+        }
+        
+        // Get the dropdown element
+        console.log('DEBUG: Starting to set up user profile dropdown');
+        const userProfile = header.querySelector('#userProfileDropdown');
+        console.log('DEBUG: userProfile element found:', userProfile !== null);
+        
+        const userDropdown = userProfile ? userProfile.querySelector('.user-dropdown') : null;
+        console.log('DEBUG: userDropdown element found:', userDropdown !== null);
+        
+        // Initialize dropdown state - hide it initially
+        if (userDropdown) {
+            console.log('DEBUG: Setting up dropdown styles');
+            userDropdown.style.position = 'absolute';
+            userDropdown.style.top = '100%';
+            userDropdown.style.right = '0';
+            userDropdown.style.backgroundColor = '#fff';
+            userDropdown.style.borderRadius = '4px';
+            userDropdown.style.boxShadow = '0 2px 10px rgba(0, 0, 0, 0.1)';
+            userDropdown.style.width = '200px';
+            userDropdown.style.zIndex = '1000';
+            userDropdown.style.display = 'none';
+            userDropdown.style.marginTop = '5px';
+            
+            // Style the dropdown list
+            const dropdownList = userDropdown.querySelector('ul');
+            console.log('DEBUG: dropdown list found:', dropdownList !== null);
+            if (dropdownList) {
+                dropdownList.style.listStyle = 'none';
+                dropdownList.style.padding = '0';
+                dropdownList.style.margin = '0';
+            }
+            
+            // Style the dropdown items
+            const dropdownItems = userDropdown.querySelectorAll('li a');
+            console.log('DEBUG: dropdown items found:', dropdownItems.length);
+            dropdownItems.forEach((item, index) => {
+                console.log(`DEBUG: Setting up dropdown item ${index}`);
+                item.style.display = 'flex';
+                item.style.alignItems = 'center';
+                item.style.padding = '10px 15px';
+                item.style.color = '#343a40';
+                item.style.textDecoration = 'none';
+                item.style.transition = 'background-color 0.2s';
+                
+                item.addEventListener('mouseover', () => {
+                    console.log(`DEBUG: Mouseover on dropdown item ${index}`);
+                    item.style.backgroundColor = '#f8f9fa';
+                });
+                
+                item.addEventListener('mouseout', () => {
+                    item.style.backgroundColor = '';
+                });
+                
+                // Add icon styling
+                const icon = item.querySelector('i');
+                if (icon) {
+                    icon.style.marginRight = '10px';
+                    icon.style.width = '20px';
+                    icon.style.textAlign = 'center';
+                }
+            });
+            
+            // Style the divider
+            const divider = userDropdown.querySelector('li.divider');
+            console.log('DEBUG: divider found:', divider !== null);
+            if (divider) {
+                divider.style.height = '1px';
+                divider.style.backgroundColor = '#e9ecef';
+                divider.style.margin = '5px 0';
+            }
+            
+            // Check logout link
+            const logoutLink = userDropdown.querySelector('#logoutLink');
+            console.log('DEBUG: logoutLink found in dropdown:', logoutLink !== null);
+            if (logoutLink) {
+                console.log('DEBUG: Adding click event to logout link in dropdown');
+                logoutLink.addEventListener('click', (e) => {
+                    console.log('DEBUG: Logout link clicked');
+                    e.preventDefault();
+                    // Clear localStorage
+                    localStorage.removeItem('claims_hive_token');
+                    localStorage.removeItem('claims_hive_user');
+                    // Redirect to login page - force full page navigation
+                    console.log('DEBUG: Redirecting to login.html');
+                    window.location.href = 'login.html';
+                });
+            }
         }
         
         // Toggle dropdown on click
-        const userProfile = header.querySelector('#userProfileDropdown');
         if (userProfile) {
-            userProfile.addEventListener('click', (e) => {
-                userProfile.classList.toggle('active');
-            });
+            console.log('DEBUG: Setting up click event on user profile');
+            // Make sure the cursor shows it's clickable
+            userProfile.style.cursor = 'pointer';
+            userProfile.style.position = 'relative';
             
-            // Close dropdown when clicking outside
-            document.addEventListener('click', (e) => {
-                if (!userProfile.contains(e.target)) {
-                    userProfile.classList.remove('active');
+            // Add click event
+            userProfile.addEventListener('click', (e) => {
+                console.log('DEBUG: User profile clicked');
+                e.stopPropagation(); // Prevent event from bubbling up
+                
+                // Toggle dropdown visibility
+                if (userDropdown) {
+                    const isVisible = userDropdown.style.display === 'block';
+                    console.log('DEBUG: Current dropdown visibility:', isVisible);
+                    userDropdown.style.display = isVisible ? 'none' : 'block';
+                    console.log('DEBUG: New dropdown visibility:', !isVisible);
                 }
             });
+            
+            // Close dropdown when clicking outside - with a small delay to prevent immediate firing
+            setTimeout(() => {
+                let dropdownVisible = false;
+                
+                document.addEventListener('click', (e) => {
+                    // Only hide if dropdown is visible and click is outside userProfile
+                    if (dropdownVisible && !userProfile.contains(e.target)) {
+                        console.log('DEBUG: Document clicked outside profile, hiding dropdown');
+                        userDropdown.style.display = 'none';
+                        dropdownVisible = false;
+                    }
+                });
+                
+                // Update the click handler to track visibility
+                userProfile.addEventListener('click', (e) => {
+                    console.log('DEBUG: User profile clicked');
+                    e.stopPropagation(); // Prevent event from bubbling up
+                    
+                    // Toggle dropdown visibility
+                    if (userDropdown) {
+                        dropdownVisible = !dropdownVisible;
+                        console.log('DEBUG: Setting dropdown visibility to:', dropdownVisible);
+                        userDropdown.style.display = dropdownVisible ? 'block' : 'none';
+                    }
+                }, true); // Use capture phase
+            }, 500); // Small delay to ensure DOM is ready
+            
+            // Prevent dropdown from closing when clicking inside it
+            if (userDropdown) {
+                userDropdown.addEventListener('click', (e) => {
+                    console.log('DEBUG: Click inside dropdown, stopping propagation');
+                    e.stopPropagation(); // Prevent event from bubbling up to userProfile
+                });
+            }
         }
     }
     
